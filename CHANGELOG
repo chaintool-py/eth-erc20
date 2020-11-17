@@ -1,0 +1,3 @@
+* 0.0.1
+	- Adapt Bancor ERC20 token contract
+	- Add deploy-and-gift script
