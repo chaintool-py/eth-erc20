@@ -48,7 +48,7 @@ contract GiftableToken { //is IERC20Token, Utils {
       * @param _decimals    decimal points, for display purposes
       * @param _initialSupply total supply of token units
     */
-    constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _initialSupply) {
+    constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _initialSupply) public {
         // validate input
         require(bytes(_name).length > 0, "ERR_INVALID_NAME");
         require(bytes(_symbol).length > 0, "ERR_INVALID_SYMBOL");

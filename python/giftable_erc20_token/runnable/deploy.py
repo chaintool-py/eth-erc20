@@ -8,6 +8,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # standard imports
+import os
 import json
 import argparse
 import logging
@@ -28,6 +29,7 @@ argparser.add_argument('-n', '--name', dest='n', default='Giftable Token', type=
 argparser.add_argument('-s', '--symbol', dest='s', default='GFT', type=str, help='Token symbol')
 argparser.add_argument('-d', '--decimals', dest='d', default=18, type=int, help='Token decimals')
 argparser.add_argument('-a', '--account', dest='a', action='append', type=str, help='Account to fund')
+argparser.add_argument('--contracts-dir', dest='contracts_dir', type=str, default='.', help='Directory containing bytecode and abi')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('amount', type=int, help='Initial token supply (will be owned by contract creator)')
 args = argparser.parse_args()
@@ -35,14 +37,14 @@ args = argparser.parse_args()
 if args.v:
     logg.setLevel(logging.DEBUG)
 
-if __name__ == '__main__':
+def main():
     w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
-    f = open('./GiftableToken.abi.json', 'r')
+    f = open(os.path.join(args.contracts_dir, 'GiftableToken.abi.json'), 'r')
     abi = json.load(f)
     f.close()
 
-    f = open('./GiftableToken.bin', 'r')
+    f = open(os.path.join(args.contracts_dir, 'GiftableToken.bin'), 'r')
     bytecode = f.read()
     f.close()
 
@@ -69,3 +71,7 @@ if __name__ == '__main__':
             logg.info('balance {}: {}'.format(a, balance))
 
     print(address)
+
+
+if __name__ == '__main__':
+    main()
