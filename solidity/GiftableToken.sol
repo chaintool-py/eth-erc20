@@ -52,6 +52,7 @@ contract GiftableToken {
 	}
 
 	function transfer(address _to, uint256 _value) public returns (bool) {
+		require(balanceOf[msg.sender] >= _value);
 		balanceOf[msg.sender] -= _value; 
 		balanceOf[_to] += _value;
 		emit Transfer(msg.sender, _to, _value);
@@ -59,6 +60,8 @@ contract GiftableToken {
 	}
 
 	function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+		require(allowances[_from][msg.sender] >= _value);
+		require(balanceOf[_from] >= _value);
 		allowances[_from][msg.sender] = allowances[_from][msg.sender] - _value;
 		balanceOf[_from] -= _value; 
 		balanceOf[_to] += _value;
