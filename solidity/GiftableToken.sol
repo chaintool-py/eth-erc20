@@ -18,7 +18,7 @@ contract GiftableToken {
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
-	constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+	constructor(string memory _name, string memory _symbol, uint8 _decimals) public {
 		owner = msg.sender;
 		name = _name;
 		symbol = _symbol;
