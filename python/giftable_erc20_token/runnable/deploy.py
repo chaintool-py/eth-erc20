@@ -27,6 +27,7 @@ argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8
 argparser.add_argument('-n', '--name', dest='n', default='Giftable Token', type=str, help='Token name')
 argparser.add_argument('-s', '--symbol', dest='s', default='GFT', type=str, help='Token symbol')
 argparser.add_argument('-d', '--decimals', dest='d', default=18, type=int, help='Token decimals')
+argparser.add_argument('-o', '--owner', dest='o', type=str, help='Reserve owner account')
 argparser.add_argument('-a', '--account', dest='a', action='append', type=str, help='Account to fund')
 argparser.add_argument('-m', '--minter', dest='m', action='append', type=str, help='Minter to add')
 argparser.add_argument('--contracts-dir', dest='contracts_dir', type=str, default='.', help='Directory containing bytecode and abi')
@@ -49,6 +50,8 @@ def main():
     f.close()
 
     w3.eth.defaultAccount = w3.eth.accounts[0]
+    if args.o != None:
+        w3.eth.defaultAccount = web3.Web3.toChecksumAddress(args.o)
 
     c = w3.eth.contract(abi=abi, bytecode=bytecode)
     tx_hash = c.constructor(args.n, args.s, args.d).transact()
