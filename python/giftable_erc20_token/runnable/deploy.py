@@ -51,7 +51,7 @@ def main():
 
     w3.eth.defaultAccount = w3.eth.accounts[0]
     if args.o != None:
-        w3.eth.defaultAccount = web3.Web3.toChecksumAddress(args.o)
+        w3.eth.defaultAccount = args.o
 
     c = w3.eth.contract(abi=abi, bytecode=bytecode)
     tx_hash = c.constructor(args.n, args.s, args.d).transact()
