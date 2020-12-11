@@ -1,3 +1,6 @@
+* 0.0.6
+	- Rename contracts-dir flag to abi-dir
+	- Use package data dir as default abi dir
 * 0.0.5
 	- Add token owner flag to deploy script
 * 0.0.4
