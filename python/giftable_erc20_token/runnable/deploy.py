@@ -30,7 +30,7 @@ argparser.add_argument('-d', '--decimals', dest='d', default=18, type=int, help=
 argparser.add_argument('-o', '--owner', dest='o', type=str, help='Reserve owner account')
 argparser.add_argument('-a', '--account', dest='a', action='append', type=str, help='Account to fund')
 argparser.add_argument('-m', '--minter', dest='m', action='append', type=str, help='Minter to add')
-argparser.add_argument('--contracts-dir', dest='contracts_dir', type=str, default='.', help='Directory containing bytecode and abi')
+argparser.add_argument('--abi-dir', dest='abi_dir', type=str, default='.', help='Directory containing bytecode and abi')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('amount', type=int, help='Initial token supply (will be owned by contract creator)')
 args = argparser.parse_args()
@@ -41,11 +41,11 @@ if args.v:
 def main():
     w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
-    f = open(os.path.join(args.contracts_dir, 'GiftableToken.abi.json'), 'r')
+    f = open(os.path.join(args.abi_dir, 'GiftableToken.abi.json'), 'r')
     abi = json.load(f)
     f.close()
 
-    f = open(os.path.join(args.contracts_dir, 'GiftableToken.bin'), 'r')
+    f = open(os.path.join(args.abi_dir, 'GiftableToken.bin'), 'r')
     bytecode = f.read()
     f.close()
 

@@ -12,7 +12,7 @@ contract GiftableToken {
 	uint8 public decimals;
 	uint256 public totalSupply;
 	mapping (address => uint256) public balanceOf;
-	mapping (address => mapping (address => uint256)) public allowances;
+	mapping (address => mapping (address => uint256)) public allowance;
 
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
@@ -60,9 +60,9 @@ contract GiftableToken {
 	}
 
 	function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-		require(allowances[_from][msg.sender] >= _value);
+		require(allowance[_from][msg.sender] >= _value);
 		require(balanceOf[_from] >= _value);
-		allowances[_from][msg.sender] = allowances[_from][msg.sender] - _value;
+		allowance[_from][msg.sender] = allowance[_from][msg.sender] - _value;
 		balanceOf[_from] -= _value; 
 		balanceOf[_to] += _value;
 		emit TransferFrom(_from, _to, msg.sender, _value);
@@ -70,7 +70,7 @@ contract GiftableToken {
 	}
 
 	function approve(address _spender, uint256 _value) public returns (bool) {
-		allowances[msg.sender][_spender] += _value;
+		allowance[msg.sender][_spender] += _value;
 		emit Approval(msg.sender, _spender, _value);
 		return true;
 	}

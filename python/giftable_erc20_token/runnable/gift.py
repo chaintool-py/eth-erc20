@@ -26,7 +26,7 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8545', type=str, help='Web3 provider url (http only)')
 argparser.add_argument('-t', '--token-address', required='True', dest='t', type=str, help='Giftable token address')
 argparser.add_argument('-m', '--minter-address', dest='m', type=str, help='Minter account address')
-argparser.add_argument('--contracts-dir', dest='contracts_dir', type=str, default='.', help='Directory containing bytecode and abi')
+argparser.add_argument('--abi-dir', dest='abi_dir', type=str, default='.', help='Directory containing bytecode and abi')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('-r', '--recipient-address', dest='r', type=str, help='Recipient account address')
 argparser.add_argument('amount', type=int, help='Amount of tokens to mint and gift')
@@ -38,7 +38,7 @@ if args.v:
 def main():
     w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
-    f = open(os.path.join(args.contracts_dir, 'GiftableToken.abi.json'), 'r')
+    f = open(os.path.join(args.abi_dir, 'GiftableToken.abi.json'), 'r')
     abi = json.load(f)
     f.close()
 
