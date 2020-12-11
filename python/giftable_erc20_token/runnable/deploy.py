@@ -22,6 +22,9 @@ logg = logging.getLogger()
 logging.getLogger('web3').setLevel(logging.WARNING)
 logging.getLogger('urllib3').setLevel(logging.WARNING)
 
+script_dir = os.path.dirname(__file__)
+data_dir = os.path.join(script_dir, '..', 'data')
+
 argparser = argparse.ArgumentParser()
 argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8545', type=str, help='Web3 provider url (http only)')
 argparser.add_argument('-n', '--name', dest='n', default='Giftable Token', type=str, help='Token name')
@@ -30,7 +33,7 @@ argparser.add_argument('-d', '--decimals', dest='d', default=18, type=int, help=
 argparser.add_argument('-o', '--owner', dest='o', type=str, help='Reserve owner account')
 argparser.add_argument('-a', '--account', dest='a', action='append', type=str, help='Account to fund')
 argparser.add_argument('-m', '--minter', dest='m', action='append', type=str, help='Minter to add')
-argparser.add_argument('--abi-dir', dest='abi_dir', type=str, default='.', help='Directory containing bytecode and abi')
+argparser.add_argument('--abi-dir', dest='abi_dir', type=str, default=data_dir, help='Directory containing bytecode and abi (default: {})'.format(data_dir))
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('amount', type=int, help='Initial token supply (will be owned by contract creator)')
 args = argparser.parse_args()
