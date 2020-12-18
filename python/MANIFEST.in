@@ -1,1 +1,1 @@
-include **/data/*.abi.json **/data/*.bin
+include **/data/GiftableToken.json **/data/GiftableToken.bin

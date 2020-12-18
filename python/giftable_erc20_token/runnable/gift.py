@@ -1,5 +1,4 @@
 """Mints and gifts tokens to a given address
-
 .. moduleauthor:: Louis Holbrook <dev@holbrook.no>
 .. pgp:: 0826EDA1702D1E87C6E2875121D2E7BB88C2A746 
 
@@ -41,7 +40,7 @@ if args.v:
 def main():
     w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
-    f = open(os.path.join(args.abi_dir, 'GiftableToken.abi.json'), 'r')
+    f = open(os.path.join(args.abi_dir, 'GiftableToken.json'), 'r')
     abi = json.load(f)
     f.close()
 

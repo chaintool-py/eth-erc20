@@ -44,7 +44,7 @@ if args.v:
 def main():
     w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
-    f = open(os.path.join(args.abi_dir, 'GiftableToken.abi.json'), 'r')
+    f = open(os.path.join(args.abi_dir, 'GiftableToken.json'), 'r')
     abi = json.load(f)
     f.close()
 
