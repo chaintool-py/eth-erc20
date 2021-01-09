@@ -1,7 +1,10 @@
+#SOLC = /home/lash/build/solidity/build/solc/solc
+SOLC = /usr/bin/solc
+
 all:
-	solc --bin GiftableToken.sol | awk 'NR>3' > GiftableToken.bin
+	$(SOLC) --bin GiftableToken.sol --evm-version byzantium | awk 'NR>3' > GiftableToken.bin
 	truncate -s -1 GiftableToken.bin
-	solc --abi GiftableToken.sol | awk 'NR>3' > GiftableToken.abi.json
+	$(SOLC) --abi GiftableToken.sol --evm-version byzantium | awk 'NR>3' > GiftableToken.json
 
 install: all
 	cp -v *{json,bin} ../python/giftable_erc20_token/data/
