@@ -18,6 +18,9 @@ import time
 # third-party imports
 import web3
 from eth_keys import keys
+from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
+from crypto_dev_signer.keystore import DictKeystore
+from crypto_dev_signer.helper import TxExecutor
 
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
@@ -45,41 +48,51 @@ args = argparser.parse_args()
 if args.v:
     logg.setLevel(logging.DEBUG)
 
-block_mode = 0
-if args.ww:
-    logg.debug('set block after each tx')
-    block_mode = 2
-elif args.w:
-    logg.debug('set block until last tx')
-    block_mode = 1
+block_last = args.w
+block_all = args.ww
 
 w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
-private_key = None
 signer_address = None
+keystore = DictKeystore()
 if args.y != None:
     logg.debug('loading keystore file {}'.format(args.y))
-    f = open(args.y, 'r')
-    encrypted_key = f.read()
-    f.close()
-    private_key = w3.eth.account.decrypt(encrypted_key, '')
-    private_key_object = keys.PrivateKey(private_key)
-    signer_address = private_key_object.public_key.to_checksum_address()
+    signer_address = keystore.import_keystore_file(args.y)
     logg.debug('now have key for signer address {}'.format(signer_address))
+signer = EIP155Signer(keystore)
 
-network_pair = args.i.split(':')
-network_id = int(network_pair[1])
+chain_pair = args.i.split(':')
+chain_id = int(chain_pair[1])
 
+def gas_helper(signer_address, code, inputs):
+    return 8000000
 
-def waitFor(tx_hash):
-    i = 1
-    while True:
-        try:
-            return w3.eth.getTransactionReceipt(tx_hash)
-        except web3.exceptions.TransactionNotFound:
-            logg.debug('poll #{} for {}'.format(i, tx_hash.hex()))   
-            i += 1
-            time.sleep(1)
+def gas_price_helper():
+    return 20000000000
+
+def translateTx(tx):
+        return {
+            'from': tx['from'],
+            'chainId': tx['chainId'],
+            'gas': tx['feeUnits'],
+            'gasPrice': tx['feePrice'],
+            'nonce': tx['nonce'],
+            }
+
+nonce = w3.eth.getTransactionCount(signer_address, 'pending')
+
+helper = TxExecutor(
+        signer_address,
+        signer,
+        w3.eth.sendRawTransaction,
+        w3.eth.getTransactionReceipt,
+        nonce,
+        chain_id,
+        fee_helper=gas_helper,
+        fee_price_helper=gas_price_helper,
+        block=args.ww,
+        )
+
 
 
 def main():
@@ -100,49 +113,30 @@ def main():
     if args.recipient != None:
         recipient = args.recipient
 
-    tx = c.functions.mint(args.amount).buildTransaction({
-        'chainId': network_id,
-        'gas': 60000,
-        'gasPrice': gas_price,
-        'nonce': nonce,
-        })
+    (tx_hash, rcpt) = helper.sign_and_send(
+            [
+                translateTx,
+                c.functions.mint(args.amount).buildTransaction,
+                ],
+            )
 
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-    tx_hash_mint = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-    last_tx = tx_hash_mint
-    logg.info('mint to {} tx {}'.format(signer_address, tx_hash_mint.hex()))
+    logg.info('mint to {} tx {}'.format(signer_address, tx_hash)) #.hex()))
 
-    if block_mode == 2:
-        rcpt = waitFor(tx_hash_mint)
-        if rcpt['status'] == 0:
-            logg.critical('mint failed: {}'.format(tx_hash_mint.hex()))
-            sys.exit(1)
-        else:
-            logg.info('mint succeeded. gas used: {}'.format(rcpt['gasUsed']))
+    (tx_hash, rcpt) = helper.sign_and_send(
+            [
+                translateTx,
+                c.functions.transfer(recipient, args.amount).buildTransaction,
+                ],
+            )
 
-    nonce += 1
+    logg.info('transfer to {} tx {}'.format(recipient, tx_hash))
 
-    tx = c.functions.transfer(recipient, args.amount).buildTransaction({
-        'chainId': network_id,
-        'gas': 60000,
-        'gasPrice': gas_price,
-        'nonce': nonce,
-        })
 
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-    tx_hash_mint = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-    last_tx = tx_hash_mint
-    logg.info('transfer to {} tx {}'.format(recipient, tx_hash_mint.hex()))
+    if block_last:
+        helper.wait_for()
 
-    if block_mode > 0:
-        rcpt = waitFor(tx_hash_mint)
-        if rcpt['status'] == 0:
-            logg.error('trasnfer failed: {}'.format(tx_hash_mint.hex()))
-            sys.exit(1)
-        else:
-            logg.info('transfer succeeded. gas used: {}'.format(rcpt['gasUsed']))
+    print(tx_hash)
 
-    print(last_tx.hex())
     sys.exit(0)
 
 
