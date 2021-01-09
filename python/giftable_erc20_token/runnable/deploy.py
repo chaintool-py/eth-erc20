@@ -14,10 +14,13 @@ import json
 import argparse
 import logging
 import time
+from enum import Enum
 
 # third-party imports
 import web3
 from eth_keys import keys
+from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
+from crypto_dev_signer.eth.transaction import EIP155Transaction
 
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
@@ -49,42 +52,116 @@ args = argparser.parse_args()
 if args.v:
     logg.setLevel(logging.DEBUG)
 
-block_mode = 0
-if args.ww:
-    logg.debug('set block after each tx')
-    block_mode = 2
-elif args.w:
-    logg.debug('set block until last tx')
-    block_mode = 1
+block_last = args.w
+block_all = args.ww
+
+
+class DictKeystore:
+
+    def __init__(self):
+        self.keys = {}
+        self.nonces = {}
+        
+
+    def get(self, address, password=None):
+        return self.keys[signer_address]
+
+
+    def import_file(self, keystore_file):
+        f = open(keystore_file, 'r')
+        encrypted_key = f.read()
+        f.close()
+        private_key = w3.eth.account.decrypt(encrypted_key, '')
+        private_key_object = keys.PrivateKey(private_key)
+        signer_address = private_key_object.public_key.to_checksum_address()
+        self.keys[signer_address] = private_key
+        return signer_address
+
+
+class TransactionRevertError(Exception):
+    pass
+
+
+class EthCliHelper:
+
+    def __init__(self, w3, signer, chain_id, block=False, gas_price_helper=None):
+        self.w3 = w3
+        self.nonce = {}
+        self.signer = signer
+        self.block = bool(block)
+        self.chain_id = chain_id
+        self.tx_hashes = []
+        self.gas_helper = self.default_gas_helper
+        if gas_price_helper == None:
+            gas_price_helper = self.default_gas_price_helper
+        self.gas_price_helper = gas_price_helper
+
+
+    def default_gas_price_helper(self):
+        return w3.eth.gasPrice
+
+
+    def default_gas_helper(self, address, tx_data, args):
+        return 8000000
+
+
+    def sign_and_send(self, signer_address, tx_buildable, force_wait=False):
+        if self.nonce.get(signer_address) == None:
+            self.nonce[signer_address] = w3.eth.getTransactionCount(signer_address, 'pending')
+        tx = tx_buildable.buildTransaction({
+                'from': signer_address,
+                'chainId': self.chain_id,
+                'gasPrice': self.gas_price_helper(),
+                'nonce': self.nonce[signer_address],
+                })
+
+        tx['gas'] = self.gas_helper(signer_address, None, None) 
+        logg.debug('from {} nonce {} tx {}'.format(signer_address, self.nonce[signer_address], tx))
+
+        chain_tx = EIP155Transaction(tx, self.nonce[signer_address], self.chain_id)
+        signature = self.signer.signTransaction(chain_tx)
+        chain_tx_serialized = chain_tx.rlp_serialize()
+        tx_hash = self.w3.eth.sendRawTransaction('0x' + chain_tx_serialized.hex())
+        self.tx_hashes.append(tx_hash)
+        self.nonce[signer_address] += 1
+        rcpt = None
+        if self.block or force_wait:
+            rcpt = self.wait_for(tx_hash)
+            logg.info('tx {} gas used: {}'.format(tx_hash.hex(), rcpt['gasUsed']))
+        return (tx_hash.hex(), rcpt)
+
+
+    def wait_for(self, tx_hash=None):
+        if tx_hash == None:
+            tx_hash = self.tx_hashes[len(self.tx_hashes)-1]
+        i = 1
+        while True:
+            try:
+                return w3.eth.getTransactionReceipt(tx_hash)
+            except web3.exceptions.TransactionNotFound:
+                logg.debug('poll #{} for {}'.format(i, tx_hash.hex()))   
+                i += 1
+                time.sleep(1)
+        if rcpt['status'] == 0:
+            raise TransactionRevertError(tx_hash)
+        return rcpt
+
+
 
 w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
-private_key = None
 signer_address = None
+keystore = DictKeystore()
 if args.y != None:
     logg.debug('loading keystore file {}'.format(args.y))
-    f = open(args.y, 'r')
-    encrypted_key = f.read()
-    f.close()
-    private_key = w3.eth.account.decrypt(encrypted_key, '')
-    private_key_object = keys.PrivateKey(private_key)
-    signer_address = private_key_object.public_key.to_checksum_address()
+    signer_address = keystore.import_file(args.y)
     logg.debug('now have key for signer address {}'.format(signer_address))
+signer = EIP155Signer(keystore)
 
-network_pair = args.i.split(':')
-network_id = int(network_pair[1])
+chain_pair = args.i.split(':')
+chain_id = int(chain_pair[1])
 
-
-def waitFor(tx_hash):
-    i = 1
-    while True:
-        try:
-            return w3.eth.getTransactionReceipt(tx_hash)
-        except web3.exceptions.TransactionNotFound:
-            logg.debug('poll #{} for {}'.format(i, tx_hash.hex()))   
-            i += 1
-            time.sleep(1)
-
+helper = EthCliHelper(w3, signer, chain_id, args.ww)
 
 def main():
 
@@ -96,121 +173,40 @@ def main():
     bytecode = f.read()
     f.close()
 
-    gas_price = w3.eth.gasPrice
-
-    last_tx = None
-
-    nonce = w3.eth.getTransactionCount(signer_address, 'pending')
-
     c = w3.eth.contract(abi=abi, bytecode=bytecode)
-    tx = c.constructor(args.n, args.s, args.d).buildTransaction({
-        'chainId': network_id,
-        'gas': 1500000,
-        'gasPrice': gas_price,
-        'nonce': nonce,
-        }) #transact()
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-    tx_hash = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-    last_tx = tx_hash
-    rcpt = waitFor(tx_hash)
-    if rcpt['status'] == 0:
-        logg.critial('constructor transaction failed {}'.format(tx_hash))
-        sys.exit(1)
-    else:
-        logg.info('constructor succeeded. gas used: {}'.format(rcpt['gasUsed']))
+    tx = c.constructor(args.n, args.s, args.d)
+
+    (tx_hash, rcpt) = helper.sign_and_send(signer_address, tx, force_wait=True)
+    logg.debug('tx hash {} rcpt {}'.format(tx_hash, rcpt))
 
     address = rcpt.contractAddress
     logg.debug('token contract mined {} {} {} {}'.format(address, args.n, args.s, args.d))
     c = w3.eth.contract(abi=abi, address=address)
 
     balance = c.functions.balanceOf(signer_address).call()
-    logg.info('balance {}: {} {}'.format(signer_address, balance, tx_hash.hex()))
-
-    if args.account != None:
-        for a in args.account:
-            if a == signer_address:
-                continue
-            nonce += 1
-            tx = c.functions.mint(args.amount).buildTransaction({
-                'chainId': network_id,
-                'gas': 70000,
-                'gasPrice': gas_price,
-                'nonce': nonce,
-                })
-
-            signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-            tx_hash_mint = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-            last_tx = tx_hash_mint
-            logg.info('mint to {} tx {}'.format(a, tx_hash_mint.hex()))
-
-            if block_mode == 2:
-                rcpt = waitFor(tx_hash_mint)
-                if rcpt['status'] == 0:
-                    logg.error('mint failed: {}'.format(tx_hash_mint.hex()))
-                    if args.e:
-                        sys.exit(1)
-                else:
-                    logg.info('mint succeeded. gas used: {}'.format(rcpt['gasUsed']))
-
-            nonce += 1
-            tx = c.functions.transfer(a, args.amount).buildTransaction({
-                'chainId': network_id,
-                'gas': 40000,
-                'gasPrice':  gas_price,
-                'nonce': nonce,
-                })
-
-            signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-            tx_hash_transfer = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-            last_tx = tx_hash_transfer
-            logg.info('trasnfer to {} tx {}'.format(a, tx_hash_mint.hex()))
-
-            if block_mode == 2:
-                rcpt = waitFor(tx_hash_transfer)
-                balance = c.functions.balanceOf(a).call()
-                logg.info('balance {}: {}'.format(a, balance))
-                if rcpt['status'] == 0:
-                    logg.error('transfer failed: {}'.format(tx_hash_mint.hex()))
-                    if args.e:
-                        sys.exit(1)
-                else:
-                    logg.info('transfer succeeded. gas used: {}'.format(rcpt['gasUsed']))
+    logg.info('balance {}: {} {}'.format(signer_address, balance, tx_hash))
 
     if args.minter != None:
         for a in args.minter:
             if a == signer_address:
                 continue
-            nonce += 1
-            tx = c.functions.addMinter(a).buildTransaction({
-                'chainId': network_id,
-                'gas': 50000,
-                'gasPrice': 1000000000000,
-                'nonce': nonce,
-                    })
-            signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-            tx_hash_minter = w3.eth.sendRawTransaction(signed_tx.rawTransaction)
-            last_tx = tx_hash_minter
-            logg.info('minter add {} tx {}'.format(a, tx_hash_minter.hex()))
-            if block_mode == 2:
-                rcpt = waitFor(tx_hash_minter)
-                balance = c.functions.balanceOf(a).call()
-                if rcpt['status'] == 0:
-                    logg.error('minter add failed: {}'.format(tx_hash_minter))
-                    if args.e:
-                        sys.exit(1)
-                else:
-                    logg.info('minter add succeeded. gas used: {}'.format(rcpt['gasUsed']))
+            tx = c.functions.addMinter(a)
+            (tx_hash, rcpt) = helper.sign_and_send(signer_address, tx)
 
-    if block_mode > 0:
-        rcpt = waitFor(last_tx)
-        if rcpt['status'] == 0:
-            logg.error('failed: {}'.format(tx_hash_mint.hex()))
-            if args.e:
-                sys.exit(1)
+    if args.account != None:
+        mint_total = len(args.account) * args.amount
+        tx = c.functions.mint(mint_total)
+        (tx_hash, rcpt) = helper.sign_and_send(signer_address, tx, True)
+        for a in args.account:
+            tx = c.functions.transfer(a, args.amount)
+            (tx_hash, rcpt) = helper.sign_and_send(signer_address, tx)
+
+    if block_last:
+        helper.wait_for()
 
     print(address)
-    sys.exit(0)
 
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()
