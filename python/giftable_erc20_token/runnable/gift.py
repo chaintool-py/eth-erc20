@@ -20,7 +20,7 @@ import web3
 from eth_keys import keys
 from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
 from crypto_dev_signer.keystore import DictKeystore
-from crypto_dev_signer.helper import TxExecutor
+from crypto_dev_signer.eth.helper import EthTxExecutor
 
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
@@ -64,35 +64,13 @@ signer = EIP155Signer(keystore)
 chain_pair = args.i.split(':')
 chain_id = int(chain_pair[1])
 
-def gas_helper(signer_address, code, inputs):
-    return 8000000
-
-def gas_price_helper():
-    return 20000000000
-
-def translateTx(tx):
-        return {
-            'from': tx['from'],
-            'chainId': tx['chainId'],
-            'gas': tx['feeUnits'],
-            'gasPrice': tx['feePrice'],
-            'nonce': tx['nonce'],
-            }
-
-nonce = w3.eth.getTransactionCount(signer_address, 'pending')
-
-helper = TxExecutor(
+helper = EthTxExecutor(
+        w3,
         signer_address,
         signer,
-        w3.eth.sendRawTransaction,
-        w3.eth.getTransactionReceipt,
-        nonce,
         chain_id,
-        fee_helper=gas_helper,
-        fee_price_helper=gas_price_helper,
         block=args.ww,
         )
-
 
 
 def main():
@@ -115,7 +93,6 @@ def main():
 
     (tx_hash, rcpt) = helper.sign_and_send(
             [
-                translateTx,
                 c.functions.mint(args.amount).buildTransaction,
                 ],
             )
@@ -124,7 +101,6 @@ def main():
 
     (tx_hash, rcpt) = helper.sign_and_send(
             [
-                translateTx,
                 c.functions.transfer(recipient, args.amount).buildTransaction,
                 ],
             )
