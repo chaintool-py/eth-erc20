@@ -15,7 +15,6 @@ import argparse
 import logging
 import time
 from enum import Enum
-import uuid
 
 # third-party imports
 import web3
@@ -89,15 +88,9 @@ def main():
     f.close()
 
     c = w3.eth.contract(abi=abi, bytecode=bytecode)
-    tx = c.constructor(args.n, args.s, args.d).buildTransaction
-    uu = str(uuid.uuid4())
-    f = open(os.path.join('txs', uu), 'w')
-    f.write(str(tx()))
-    f.close()
-    logg.info('saved to {}'.format(uu))
     (tx_hash, rcpt) = helper.sign_and_send(
             [
-                tx,
+                c.constructor(args.n, args.s, args.d).buildTransaction
                 ],
             force_wait=True,
             )
