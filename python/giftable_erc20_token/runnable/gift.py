@@ -95,6 +95,7 @@ def main():
             [
                 c.functions.mint(args.amount).buildTransaction,
                 ],
+                force_wait=True,
             )
 
     logg.info('mint to {} tx {}'.format(signer_address, tx_hash)) #.hex()))
