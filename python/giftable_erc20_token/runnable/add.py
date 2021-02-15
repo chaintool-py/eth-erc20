@@ -41,7 +41,7 @@ argparser.add_argument('-a', '--token-address', required='True', dest='a', type=
 argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum keystore file to use for signing')
 argparser.add_argument('--abi-dir', dest='abi_dir', type=str, default=data_dir, help='Directory containing bytecode and abi (default: {})'.format(data_dir))
 argparser.add_argument('-v', action='store_true', help='Be verbose')
-argparser.add_argument('minter_address', type=int, help='Minter address to add')
+argparser.add_argument('minter_address', type=str, help='Minter address to add')
 args = argparser.parse_args()
 
 if args.v:
@@ -86,13 +86,12 @@ def main():
 
     c = w3.eth.contract(abi=abi, address=args.a)
 
-    recipient = signer_address
-    if args.recipient != None:
-        recipient = args.recipient
+    if not web3.Web3.isChecksumAddress(args.minter_address):
+        raise ValueError('Minter is not a valid address {}'.format(args.minter_address))
 
     (tx_hash, rcpt) = helper.sign_and_send(
             [
-                c.functions.addMinter(args.recipient).buildTransaction,
+                c.functions.addMinter(args.minter_address).buildTransaction,
                 ],
             )
 
