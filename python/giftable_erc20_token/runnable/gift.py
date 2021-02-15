@@ -48,8 +48,8 @@ args = argparser.parse_args()
 if args.v:
     logg.setLevel(logging.DEBUG)
 
-block_last = args.w
 block_all = args.ww
+block_last = args.w or block_all
 
 w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
 
@@ -93,21 +93,11 @@ def main():
 
     (tx_hash, rcpt) = helper.sign_and_send(
             [
-                c.functions.mintTo(args.amount).buildTransaction,
-                ],
-                force_wait=True,
-            )
-
-    logg.info('mint to {} tx {}'.format(signer_address, tx_hash)) #.hex()))
-
-    (tx_hash, rcpt) = helper.sign_and_send(
-            [
-                c.functions.transfer(recipient, args.amount).buildTransaction,
+                c.functions.mintTo(args.recipient, args.amount).buildTransaction,
                 ],
             )
 
-    logg.info('transfer to {} tx {}'.format(recipient, tx_hash))
-
+    logg.info('mint to {} tx {}'.format(signer_address, tx_hash))
 
     if block_last:
         helper.wait_for()
