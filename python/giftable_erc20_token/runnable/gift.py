@@ -93,7 +93,7 @@ def main():
 
     (tx_hash, rcpt) = helper.sign_and_send(
             [
-                c.functions.mint(args.amount).buildTransaction,
+                c.functions.mintTo(args.amount).buildTransaction,
                 ],
                 force_wait=True,
             )

@@ -74,8 +74,7 @@ helper = EthTxExecutor(
         signer,
         chain_id,
         block=args.ww,
-        )
-
+    )
 
 def main():
 
@@ -114,19 +113,10 @@ def main():
                     )
 
     if args.account != None:
-        mint_total = len(args.account) * args.amount
-        tx = c.functions.mint(mint_total)
-        (tx_hash, rcpt) = helper.sign_and_send(
-                [
-                    c.functions.mint(mint_total).buildTransaction,
-                    ],
-                    force_wait=True,
-                )
-
         for a in args.account:
             (tx_hash, rcpt) = helper.sign_and_send(
                     [
-                        c.functions.transfer(a, args.amount).buildTransaction,
+                        c.functions.mintTo(a, args.amount).buildTransaction,
                         ],
                     )
 
