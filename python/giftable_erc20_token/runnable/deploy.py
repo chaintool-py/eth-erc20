@@ -16,11 +16,12 @@ import logging
 import time
 from enum import Enum
 
-# third-party imports
+# external imports
 import web3
 from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
 from crypto_dev_signer.keystore import DictKeystore
 from crypto_dev_signer.eth.helper import EthTxExecutor
+from chainlib.chain import ChainSpec
 
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
@@ -37,7 +38,7 @@ argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8
 argparser.add_argument('-w', action='store_true', help='Wait for the last transaction to be confirmed')
 argparser.add_argument('-ww', action='store_true', help='Wait for every transaction to be confirmed')
 argparser.add_argument('-e', action='store_true', help='Treat all transactions as essential')
-argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='Ethereum:1', help='Chain specification string')
+argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
 argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum keystore file to use for signing')
 argparser.add_argument('--name', dest='n', default='Giftable Token', type=str, help='Token name')
 argparser.add_argument('--symbol', dest='s', default='GFT', type=str, help='Token symbol')
@@ -65,8 +66,8 @@ if args.y != None:
     logg.debug('now have key for signer address {}'.format(signer_address))
 signer = EIP155Signer(keystore)
 
-chain_pair = args.i.split(':')
-chain_id = int(chain_pair[1])
+chain_spec = ChainSpec.from_chain_str(args.i)
+chain_id = chain_spec.network_id()
 
 helper = EthTxExecutor(
         w3,
