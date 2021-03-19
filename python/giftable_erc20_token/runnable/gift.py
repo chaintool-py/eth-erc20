@@ -21,7 +21,7 @@ from eth_keys import keys
 from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
 from crypto_dev_signer.keystore import DictKeystore
 from crypto_dev_signer.eth.helper import EthTxExecutor
-from chainlib.chain from ChainSpec
+from chainlib.chain import ChainSpec
 
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
