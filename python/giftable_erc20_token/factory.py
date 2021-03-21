@@ -53,9 +53,9 @@ class GiftableToken(TxFactory):
         return GiftableToken.__bytecode
 
 
-    def add_minter(self, contract_address, sender_address, address):
+    def add_minter(self, contract_address, sender_address, address, tx_format=TxFormat.JSONRPC):
         enc = ABIContractEncoder()
-        enc.method('mintTo')
+        enc.method('addMinter')
         enc.typ(ABIContractType.ADDRESS)
         enc.address(address)
         data = enc.get()
