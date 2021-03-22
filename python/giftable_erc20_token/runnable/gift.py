@@ -87,7 +87,7 @@ token_value = args.value
 
 
 def main():
-    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
+    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle, chain_id=chain_id)
     (tx_hash_hex, o) = c.mint_to(token_address, signer_address, recipient_address, token_value)
     rpc.do(o)
     o = receipt(tx_hash_hex)

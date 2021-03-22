@@ -88,7 +88,7 @@ token_decimals = args.decimals
 
 
 def main():
-    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
+    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle, chain_id=chain_id)
     (tx_hash_hex, o) = c.constructor(signer_address, token_name, token_symbol, token_decimals)
     rpc.do(o)
     o = receipt(tx_hash_hex)

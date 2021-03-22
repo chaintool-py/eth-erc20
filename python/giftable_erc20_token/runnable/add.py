@@ -83,7 +83,7 @@ minter_address = args.minter_address
 
 
 def main():
-    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
+    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle, chain_id=chain_id)
     (tx_hash_hex, o) = c.add_minter(token_address, signer_address, minter_address)
     rpc.do(o)
     o = receipt(tx_hash_hex)
