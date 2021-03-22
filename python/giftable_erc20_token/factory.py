@@ -7,13 +7,11 @@ from chainlib.eth.tx import (
         TxFactory,
         TxFormat,
         )
-from chainlib.eth.encoding import abi_encode_hex
 from chainlib.hash import keccak256_string_to_hex
 from chainlib.eth.contract import (
         ABIContractEncoder,
         ABIContractType,
         )
-
 
 # local imports
 from giftable_erc20_token.data import data_dir
@@ -26,14 +24,21 @@ class GiftableToken(TxFactory):
     __abi = None
     __bytecode = None
 
-    def constructor(self, sender_address, name, symbol, decimals):
+    def constructor(self, sender_address, name, symbol, decimals, tx_format=TxFormat.JSONRPC):
         code = GiftableToken.bytecode()
-
-        tx = self.template(sender_address, '0x', use_nonce=True)
-        code += abi_encode_hex('(string,string,uint8)', [name, symbol, decimals])
+        enc = ABIContractEncoder()
+        enc.string(name)
+        enc.string(symbol)
+        enc.uint256(decimals)
+        code += enc.get()
+        tx = self.template(sender_address, None, use_nonce=True)
         tx = self.set_code(tx, code)
-        return self.build(tx)
+        return self.finalize(tx, tx_format)
 
+
+    @staticmethod
+    def gas(code=None):
+        return 1200000
 
     @staticmethod
     def abi():
