@@ -1,4 +1,4 @@
-"""Deploys giftable token, and optionally gifts a set amount to all accounts in wallet
+"""Deploys giftable token
 
 .. moduleauthor:: Louis Holbrook <dev@holbrook.no>
 .. pgp:: 0826EDA1702D1E87C6E2875121D2E7BB88C2A746 
@@ -48,7 +48,6 @@ argparser.add_argument('--symbol', default='GFT', type=str, help='Token symbol')
 argparser.add_argument('--decimals', default=18, type=int, help='Token decimals')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('-vv', action='store_true', help='Be more verbose')
-argparser.add_argument('amount', type=int, help='Initial token supply (will be owned by contract creator)')
 args = argparser.parse_args()
 
 if args.vv:
@@ -91,20 +90,17 @@ def main():
     c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle, chain_id=chain_id)
     (tx_hash_hex, o) = c.constructor(signer_address, token_name, token_symbol, token_decimals)
     rpc.do(o)
-    o = receipt(tx_hash_hex)
-    r = rpc.do(o)
-    if r['status'] == 0:
-        sys.stderr.write('EVM revert while deploying contract. Wish I had more to tell you')
-        sys.exit(1)
-    # TODO: pass through translator for keys (evm tester uses underscore instead of camelcase)
-    address = r['contractAddress']
-
     if block_last:
-        rpc.wait(tx_hash_hex)
+        r = rpc.wait(tx_hash_hex)
+        if r['status'] == 0:
+            sys.stderr.write('EVM revert while deploying contract. Wish I had more to tell you')
+            sys.exit(1)
+        # TODO: pass through translator for keys (evm tester uses underscore instead of camelcase)
+        address = r['contractAddress']
 
-    print(address)
-
-    sys.exit(0)
+        print(address)
+    else:
+        print(tx_hash_hex)
 
 
 if __name__ == '__main__':

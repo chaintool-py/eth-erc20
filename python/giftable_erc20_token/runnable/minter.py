@@ -86,20 +86,15 @@ def main():
     c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle, chain_id=chain_id)
     (tx_hash_hex, o) = c.add_minter(token_address, signer_address, minter_address)
     rpc.do(o)
-    o = receipt(tx_hash_hex)
-    r = rpc.do(o)
-    if r['status'] == 0:
-        sys.stderr.write('EVM revert. Wish I had more to tell you')
-        sys.exit(1)
+    if block_last:
+        r = rpc.wait(tx_hash_hex)
+        if r['status'] == 0:
+            sys.stderr.write('EVM revert. Wish I had more to tell you')
+            sys.exit(1)
 
     logg.info('add minter {} to {} tx {}'.format(minter_address, token_address, tx_hash_hex))
 
-    if block_last:
-        rpc.wait(o)
-
     print(tx_hash_hex)
-
-    sys.exit(0)
 
 
 if __name__ == '__main__':
