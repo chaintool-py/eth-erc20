@@ -38,7 +38,7 @@ class GiftableToken(TxFactory):
 
     @staticmethod
     def gas(code=None):
-        return 1200000
+        return 1500000
 
     @staticmethod
     def abi():
