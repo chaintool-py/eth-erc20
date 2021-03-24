@@ -1,2 +1,3 @@
-web3==5.12.2
-chainlib~=0.0.1a15
+confini~=0.3.6rc3
+crypto-dev-signer~=0.4.14a5
+chainlib~=0.0.1a28
