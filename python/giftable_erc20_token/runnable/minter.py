@@ -35,7 +35,6 @@ data_dir = os.path.join(script_dir, '..', 'data')
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8545', type=str, help='Web3 provider url (http only)')
-argparser.add_argument('-e', action='store_true', help='Treat all transactions as essential')
 argparser.add_argument('-w', action='store_true', help='Wait for the last transaction to be confirmed')
 argparser.add_argument('-ww', action='store_true', help='Wait for every transaction to be confirmed')
 argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='Ethereum:1', help='Chain specification string')
