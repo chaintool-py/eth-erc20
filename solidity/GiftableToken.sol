@@ -26,10 +26,10 @@ contract GiftableToken {
 		minters[msg.sender] = true;
 	}
 
-	function mint(uint256 _value) public returns (bool) {
+	function mintTo(address _to, uint256 _value) public returns (bool) {
 		require(minters[msg.sender]);
 
-		balanceOf[msg.sender] += _value;
+		balanceOf[_to] += _value;
 		totalSupply += _value;
 
 		return true;

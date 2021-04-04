@@ -1,4 +1,4 @@
-"""Mints and gifts tokens to a given address
+"""Add minter to token contact
 
 .. moduleauthor:: Louis Holbrook <dev@holbrook.no>
 .. pgp:: 0826EDA1702D1E87C6E2875121D2E7BB88C2A746 
@@ -16,13 +16,13 @@ import logging
 import time
 
 # third-party imports
+from chainlib.eth.connection import EthHTTPConnection
 from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
 from crypto_dev_signer.keystore.dict import DictKeystore
-from chainlib.eth.tx import receipt
-from chainlib.chain import ChainSpec
 from chainlib.eth.nonce import RPCNonceOracle
 from chainlib.eth.gas import RPCGasOracle
-from chainlib.eth.connection import EthHTTPConnection
+from chainlib.chain import ChainSpec
+from chainlib.eth.tx import receipt
 
 # local imports
 from giftable_erc20_token import GiftableToken
@@ -35,7 +35,6 @@ data_dir = os.path.join(script_dir, '..', 'data')
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8545', type=str, help='Web3 provider url (http only)')
-argparser.add_argument('-e', action='store_true', help='Treat all transactions as essential')
 argparser.add_argument('-w', action='store_true', help='Wait for the last transaction to be confirmed')
 argparser.add_argument('-ww', action='store_true', help='Wait for every transaction to be confirmed')
 argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
@@ -44,8 +43,7 @@ argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum ke
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('-vv', action='store_true', help='Be more verbose')
 argparser.add_argument('--env-prefix', default=os.environ.get('CONFINI_ENV_PREFIX'), dest='env_prefix', type=str, help='environment prefix for variables to overwrite configuration')
-argparser.add_argument('--recipient', type=str, help='Recipient account address. If not set, tokens will be gifted to the keystore account')
-argparser.add_argument('value', type=int, help='Value of tokens to mint and gift')
+argparser.add_argument('minter_address', type=str, help='Minter address to add')
 args = argparser.parse_args()
 
 if args.vv:
@@ -79,15 +77,12 @@ nonce_oracle = RPCNonceOracle(signer_address, rpc)
 gas_oracle = RPCGasOracle(rpc, code_callback=GiftableToken.gas)
 
 token_address = args.a
-recipient_address = args.recipient
-if recipient_address == None:
-    recipient_address = signer_address
-token_value = args.value
+minter_address = args.minter_address
 
 
 def main():
     c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
-    (tx_hash_hex, o) = c.mint_to(token_address, signer_address, recipient_address, token_value)
+    (tx_hash_hex, o) = c.add_minter(token_address, signer_address, minter_address)
     rpc.do(o)
     if block_last:
         r = rpc.wait(tx_hash_hex)
@@ -95,11 +90,9 @@ def main():
             sys.stderr.write('EVM revert. Wish I had more to tell you')
             sys.exit(1)
 
-    logg.info('mint to {} tx {}'.format(recipient_address, tx_hash_hex))
+    logg.info('add minter {} to {} tx {}'.format(minter_address, token_address, tx_hash_hex))
 
     print(tx_hash_hex)
-
-    sys.exit(0)
 
 
 if __name__ == '__main__':
