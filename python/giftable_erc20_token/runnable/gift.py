@@ -38,7 +38,7 @@ argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8
 argparser.add_argument('-e', action='store_true', help='Treat all transactions as essential')
 argparser.add_argument('-w', action='store_true', help='Wait for the last transaction to be confirmed')
 argparser.add_argument('-ww', action='store_true', help='Wait for every transaction to be confirmed')
-argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='Ethereum:1', help='Chain specification string')
+argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
 argparser.add_argument('-a', '--token-address', required='True', dest='a', type=str, help='Giftable token address')
 argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum keystore file to use for signing')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
@@ -73,7 +73,6 @@ if args.y != None:
 signer = EIP155Signer(keystore)
 
 chain_spec = ChainSpec.from_chain_str(args.i)
-chain_id = chain_spec.network_id()
 
 rpc = EthHTTPConnection(args.p)
 nonce_oracle = RPCNonceOracle(signer_address, rpc)
@@ -87,7 +86,7 @@ token_value = args.value
 
 
 def main():
-    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle, chain_id=chain_id)
+    c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
     (tx_hash_hex, o) = c.mint_to(token_address, signer_address, recipient_address, token_value)
     rpc.do(o)
     if block_last:

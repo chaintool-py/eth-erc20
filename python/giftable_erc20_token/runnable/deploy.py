@@ -74,7 +74,6 @@ if args.y != None:
 signer = EIP155Signer(keystore)
 
 chain_spec = ChainSpec.from_chain_str(args.i)
-chain_id = chain_spec.network_id()
 
 rpc = EthHTTPConnection(args.p)
 nonce_oracle = RPCNonceOracle(signer_address, rpc)
@@ -86,7 +85,7 @@ token_decimals = args.decimals
 
 
 def main():
-    c = GiftableToken(signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle, chain_id=chain_id)
+    c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
     (tx_hash_hex, o) = c.constructor(signer_address, token_name, token_symbol, token_decimals)
     rpc.do(o)
     if block_last:

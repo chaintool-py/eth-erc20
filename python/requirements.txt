@@ -1,3 +1,3 @@
 confini~=0.3.6rc3
-crypto-dev-signer~=0.4.14a11
-chainlib~=0.0.1a36
+crypto-dev-signer~=0.4.14a17
+chainlib~=0.0.2a1
