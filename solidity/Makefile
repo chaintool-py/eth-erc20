@@ -1,4 +1,3 @@
-#SOLC = /home/lash/build/solidity/build/solc/solc
 SOLC = /usr/bin/solc
 
 all:

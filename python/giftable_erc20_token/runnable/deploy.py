@@ -1,4 +1,4 @@
-"""Deploys giftable token, and optionally gifts a set amount to all accounts in wallet
+"""Deploys giftable token
 
 .. moduleauthor:: Louis Holbrook <dev@holbrook.no>
 .. pgp:: 0826EDA1702D1E87C6E2875121D2E7BB88C2A746 
@@ -16,17 +16,20 @@ import logging
 import time
 from enum import Enum
 
-# third-party imports
-import web3
+# external imports
 from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
-from crypto_dev_signer.keystore import DictKeystore
-from crypto_dev_signer.eth.helper import EthTxExecutor
+from crypto_dev_signer.keystore.dict import DictKeystore
+from chainlib.chain import ChainSpec
+from chainlib.eth.nonce import RPCNonceOracle
+from chainlib.eth.gas import RPCGasOracle
+from chainlib.eth.connection import EthHTTPConnection
+from chainlib.eth.tx import receipt
+
+# local imports
+from giftable_erc20_token import GiftableToken
 
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
-
-logging.getLogger('web3').setLevel(logging.WARNING)
-logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 script_dir = os.path.dirname(__file__)
 data_dir = os.path.join(script_dir, '..', 'data')
@@ -36,106 +39,66 @@ argparser = argparse.ArgumentParser()
 argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8545', type=str, help='Web3 provider url (http only)')
 argparser.add_argument('-w', action='store_true', help='Wait for the last transaction to be confirmed')
 argparser.add_argument('-ww', action='store_true', help='Wait for every transaction to be confirmed')
-argparser.add_argument('-e', action='store_true', help='Treat all transactions as essential')
-argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='Ethereum:1', help='Chain specification string')
+argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
 argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum keystore file to use for signing')
-argparser.add_argument('--name', dest='n', default='Giftable Token', type=str, help='Token name')
-argparser.add_argument('--symbol', dest='s', default='GFT', type=str, help='Token symbol')
-argparser.add_argument('--decimals', dest='d', default=18, type=int, help='Token decimals')
-argparser.add_argument('--account', action='append', type=str, help='Account to fund')
-argparser.add_argument('--minter', action='append', type=str, help='Minter to add')
-argparser.add_argument('--abi-dir', dest='abi_dir', type=str, default=data_dir, help='Directory containing bytecode and abi (default: {})'.format(data_dir))
+argparser.add_argument('--env-prefix', default=os.environ.get('CONFINI_ENV_PREFIX'), dest='env_prefix', type=str, help='environment prefix for variables to overwrite configuration')
+argparser.add_argument('--name', default='Giftable Token', type=str, help='Token name')
+argparser.add_argument('--symbol', default='GFT', type=str, help='Token symbol')
+argparser.add_argument('--decimals', default=18, type=int, help='Token decimals')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
-argparser.add_argument('amount', type=int, help='Initial token supply (will be owned by contract creator)')
+argparser.add_argument('-vv', action='store_true', help='Be more verbose')
 args = argparser.parse_args()
 
-if args.v:
+if args.vv:
     logg.setLevel(logging.DEBUG)
+elif args.v:
+    logg.setLevel(logging.INFO)
 
 block_last = args.w
 block_all = args.ww
 
-w3 = web3.Web3(web3.Web3.HTTPProvider(args.p))
+passphrase_env = 'ETH_PASSPHRASE'
+if args.env_prefix != None:
+    passphrase_env = args.env_prefix + '_' + passphrase_env
+passphrase = os.environ.get(passphrase_env)
+if passphrase == None:
+    logg.warning('no passphrase given')
+    passphrase=''
 
 signer_address = None
 keystore = DictKeystore()
 if args.y != None:
     logg.debug('loading keystore file {}'.format(args.y))
-    signer_address = keystore.import_keystore_file(args.y)
+    signer_address = keystore.import_keystore_file(args.y, password=passphrase)
     logg.debug('now have key for signer address {}'.format(signer_address))
 signer = EIP155Signer(keystore)
 
-chain_pair = args.i.split(':')
-chain_id = int(chain_pair[1])
+chain_spec = ChainSpec.from_chain_str(args.i)
 
-helper = EthTxExecutor(
-        w3,
-        signer_address,
-        signer,
-        chain_id,
-        block=args.ww,
-        )
+rpc = EthHTTPConnection(args.p)
+nonce_oracle = RPCNonceOracle(signer_address, rpc)
+gas_oracle = RPCGasOracle(rpc, code_callback=GiftableToken.gas)
+
+token_name = args.name
+token_symbol = args.symbol
+token_decimals = args.decimals
 
 
 def main():
-
-    f = open(os.path.join(args.abi_dir, 'GiftableToken.json'), 'r')
-    abi = json.load(f)
-    f.close()
-
-    f = open(os.path.join(args.abi_dir, 'GiftableToken.bin'), 'r')
-    bytecode = f.read()
-    f.close()
-
-    c = w3.eth.contract(abi=abi, bytecode=bytecode)
-    (tx_hash, rcpt) = helper.sign_and_send(
-            [
-                c.constructor(args.n, args.s, args.d).buildTransaction
-                ],
-            force_wait=True,
-            )
-    logg.debug('tx hash {} rcpt {}'.format(tx_hash, rcpt))
-
-    address = rcpt.contractAddress
-    logg.debug('token contract mined {} {} {} {}'.format(address, args.n, args.s, args.d))
-    c = w3.eth.contract(abi=abi, address=address)
-
-    balance = c.functions.balanceOf(signer_address).call()
-    logg.info('balance {}: {} {}'.format(signer_address, balance, tx_hash))
-
-    if args.minter != None:
-        for a in args.minter:
-            if a == signer_address:
-                continue
-            (tx_hash, rcpt) = helper.sign_and_send(
-                [
-                    c.functions.addMinter(a).buildTransaction,
-                    ],
-                    )
-
-    if args.account != None:
-        mint_total = len(args.account) * args.amount
-        tx = c.functions.mint(mint_total)
-        (tx_hash, rcpt) = helper.sign_and_send(
-                [
-                    c.functions.mint(mint_total).buildTransaction,
-                    ],
-                    force_wait=True,
-                )
-
-        for a in args.account:
-            (tx_hash, rcpt) = helper.sign_and_send(
-                    [
-                        c.functions.transfer(a, args.amount).buildTransaction,
-                        ],
-                    )
-
+    c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
+    (tx_hash_hex, o) = c.constructor(signer_address, token_name, token_symbol, token_decimals)
+    rpc.do(o)
     if block_last:
-        helper.wait_for()
+        r = rpc.wait(tx_hash_hex)
+        if r['status'] == 0:
+            sys.stderr.write('EVM revert while deploying contract. Wish I had more to tell you')
+            sys.exit(1)
+        # TODO: pass through translator for keys (evm tester uses underscore instead of camelcase)
+        address = r['contractAddress']
 
-    print(address)
-
-    sys.exit(0)
+        print(address)
+    else:
+        print(tx_hash_hex)
 
 
 if __name__ == '__main__':
