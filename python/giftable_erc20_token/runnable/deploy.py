@@ -20,8 +20,14 @@ from enum import Enum
 from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
 from crypto_dev_signer.keystore.dict import DictKeystore
 from chainlib.chain import ChainSpec
-from chainlib.eth.nonce import RPCNonceOracle
-from chainlib.eth.gas import RPCGasOracle
+from chainlib.eth.nonce import (
+        RPCNonceOracle,
+        OverrideNonceOracle,
+        )
+from chainlib.eth.gas import (
+        RPCGasOracle,
+        OverrideGasOracle,
+        )
 from chainlib.eth.connection import EthHTTPConnection
 from chainlib.eth.tx import receipt
 
@@ -45,6 +51,9 @@ argparser.add_argument('--env-prefix', default=os.environ.get('CONFINI_ENV_PREFI
 argparser.add_argument('--name', default='Giftable Token', type=str, help='Token name')
 argparser.add_argument('--symbol', default='GFT', type=str, help='Token symbol')
 argparser.add_argument('--decimals', default=18, type=int, help='Token decimals')
+argparser.add_argument('-d', action='store_true', help='Dump RPC calls to terminal and do not send')
+argparser.add_argument('--gas-price', type=int, dest='gas_price', help='Override gas price')
+argparser.add_argument('--nonce', type=int, help='Override transaction nonce')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('-vv', action='store_true', help='Be more verbose')
 args = argparser.parse_args()
@@ -76,8 +85,19 @@ signer = EIP155Signer(keystore)
 chain_spec = ChainSpec.from_chain_str(args.i)
 
 rpc = EthHTTPConnection(args.p)
-nonce_oracle = RPCNonceOracle(signer_address, rpc)
-gas_oracle = RPCGasOracle(rpc, code_callback=GiftableToken.gas)
+nonce_oracle = None
+if args.nonce != None:
+    nonce_oracle = OverrideNonceOracle(signer_address, args.nonce)
+else:
+    nonce_oracle = RPCNonceOracle(signer_address, rpc)
+
+gas_oracle = None
+if args.gas_price !=None:
+    gas_oracle = OverrideGasOracle(price=args.gas_price, conn=rpc, code_callback=GiftableToken.gas)
+else:
+    gas_oracle = RPCGasOracle(rpc, code_callback=GiftableToken.gas)
+
+dummy = args.d
 
 token_name = args.name
 token_symbol = args.symbol
@@ -87,18 +107,22 @@ token_decimals = args.decimals
 def main():
     c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
     (tx_hash_hex, o) = c.constructor(signer_address, token_name, token_symbol, token_decimals)
-    rpc.do(o)
-    if block_last:
-        r = rpc.wait(tx_hash_hex)
-        if r['status'] == 0:
-            sys.stderr.write('EVM revert while deploying contract. Wish I had more to tell you')
-            sys.exit(1)
-        # TODO: pass through translator for keys (evm tester uses underscore instead of camelcase)
-        address = r['contractAddress']
-
-        print(address)
-    else:
+    if dummy:
         print(tx_hash_hex)
+        print(o)
+    else:
+        rpc.do(o)
+        if block_last:
+            r = rpc.wait(tx_hash_hex)
+            if r['status'] == 0:
+                sys.stderr.write('EVM revert while deploying contract. Wish I had more to tell you')
+                sys.exit(1)
+            # TODO: pass through translator for keys (evm tester uses underscore instead of camelcase)
+            address = r['contractAddress']
+
+            print(address)
+        else:
+            print(tx_hash_hex)
 
 
 if __name__ == '__main__':

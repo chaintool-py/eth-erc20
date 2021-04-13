@@ -20,8 +20,14 @@ from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
 from crypto_dev_signer.keystore.dict import DictKeystore
 from chainlib.eth.tx import receipt
 from chainlib.chain import ChainSpec
-from chainlib.eth.nonce import RPCNonceOracle
-from chainlib.eth.gas import RPCGasOracle
+from chainlib.eth.nonce import (
+        RPCNonceOracle,
+        OverrideNonceOracle,
+        )
+from chainlib.eth.gas import (
+        RPCGasOracle,
+        OverrideGasOracle,
+        )
 from chainlib.eth.connection import EthHTTPConnection
 
 # local imports
@@ -43,6 +49,9 @@ argparser.add_argument('-a', '--token-address', required='True', dest='a', type=
 argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum keystore file to use for signing')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('-vv', action='store_true', help='Be more verbose')
+argparser.add_argument('-d', action='store_true', help='Dump RPC calls to terminal and do not send')
+argparser.add_argument('--gas-price', type=int, dest='gas_price', help='Override gas price')
+argparser.add_argument('--nonce', type=int, help='Override transaction nonce')
 argparser.add_argument('--env-prefix', default=os.environ.get('CONFINI_ENV_PREFIX'), dest='env_prefix', type=str, help='environment prefix for variables to overwrite configuration')
 argparser.add_argument('--recipient', type=str, help='Recipient account address. If not set, tokens will be gifted to the keystore account')
 argparser.add_argument('value', type=int, help='Value of tokens to mint and gift')
@@ -75,8 +84,19 @@ signer = EIP155Signer(keystore)
 chain_spec = ChainSpec.from_chain_str(args.i)
 
 rpc = EthHTTPConnection(args.p)
-nonce_oracle = RPCNonceOracle(signer_address, rpc)
-gas_oracle = RPCGasOracle(rpc, code_callback=GiftableToken.gas)
+nonce_oracle = None
+if args.nonce != None:
+    nonce_oracle = OverrideNonceOracle(signer_address, args.nonce)
+else:
+    nonce_oracle = RPCNonceOracle(signer_address, rpc)
+
+gas_oracle = None
+if args.gas_price !=None:
+    gas_oracle = OverrideGasOracle(price=args.gas_price, conn=rpc, code_callback=GiftableToken.gas)
+else:
+    gas_oracle = RPCGasOracle(rpc, code_callback=GiftableToken.gas)
+
+dummy = args.d
 
 token_address = args.a
 recipient_address = args.recipient
@@ -88,18 +108,20 @@ token_value = args.value
 def main():
     c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
     (tx_hash_hex, o) = c.mint_to(token_address, signer_address, recipient_address, token_value)
-    rpc.do(o)
-    if block_last:
-        r = rpc.wait(tx_hash_hex)
-        if r['status'] == 0:
-            sys.stderr.write('EVM revert. Wish I had more to tell you')
-            sys.exit(1)
+    if dummy:
+        print(tx_hash_hex)
+        print(o)
+    else:
+        rpc.do(o)
+        if block_last:
+            r = rpc.wait(tx_hash_hex)
+            if r['status'] == 0:
+                sys.stderr.write('EVM revert. Wish I had more to tell you')
+                sys.exit(1)
 
-    logg.info('mint to {} tx {}'.format(recipient_address, tx_hash_hex))
+        logg.info('mint to {} tx {}'.format(recipient_address, tx_hash_hex))
 
-    print(tx_hash_hex)
-
-    sys.exit(0)
+        print(tx_hash_hex)
 
 
 if __name__ == '__main__':
