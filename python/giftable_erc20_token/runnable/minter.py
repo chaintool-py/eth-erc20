@@ -15,7 +15,7 @@ import argparse
 import logging
 import time
 
-# third-party imports
+# external imports
 from chainlib.eth.connection import EthHTTPConnection
 from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
 from crypto_dev_signer.keystore.dict import DictKeystore
