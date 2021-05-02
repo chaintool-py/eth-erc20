@@ -1,1 +1,1 @@
-include **/data/GiftableToken.json **/data/GiftableToken.bin requirements.txt test_requirements.txt
+include **/data/ERC20.json **/data/GiftableToken.json **/data/GiftableToken.bin requirements.txt test_requirements.txt

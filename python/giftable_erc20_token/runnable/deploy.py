@@ -63,8 +63,8 @@ if args.vv:
 elif args.v:
     logg.setLevel(logging.INFO)
 
-block_last = args.w
 block_all = args.ww
+block_last = args.w or block_all
 
 passphrase_env = 'ETH_PASSPHRASE'
 if args.env_prefix != None:
