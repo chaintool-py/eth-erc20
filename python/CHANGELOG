@@ -3,7 +3,6 @@
 	- Change makefile to compile contract for Byzantium.
 	- Change mint method name to mintTo
 	- Add add minter executable script
-	- Add decode script
 * 0.0.6
 	- Rename contracts-dir flag to abi-dir
 	- Use package data dir as default abi dir

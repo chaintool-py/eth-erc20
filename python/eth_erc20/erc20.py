@@ -32,9 +32,7 @@ logg = logging.getLogger()
 
 
 class ERC20(TxFactory):
-   
-    def gas(self, code=None):
-        return 8000000
+    
 
     def balance_of(self, contract_address, address, sender_address=ZERO_ADDRESS):
         o = jsonrpc_template()
@@ -167,17 +165,7 @@ class ERC20(TxFactory):
 
 
     @classmethod
-    def parse_total_supply(self, v):
-        return abi_decode_single(ABIContractType.UINT256, v)
-
-
-    @classmethod
     def parse_balance(self, v):
-        return self.parse_balance_of(v)
-
-
-    @classmethod
-    def parse_balance_of(self, v):
         return abi_decode_single(ABIContractType.UINT256, v)
 
 

@@ -10,7 +10,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # standard imports
-import sys
 import os
 import io
 import json
@@ -30,9 +29,6 @@ from chainlib.eth.nonce import (
         RPCNonceOracle,
         OverrideNonceOracle,
         )
-from chainlib.eth.tx import (
-        unpack,
-        )
 from chainlib.eth.gas import (
         RPCGasOracle,
         OverrideGasOracle,
@@ -46,17 +42,18 @@ from eth_erc20 import ERC20
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
 
-default_eth_provider = os.environ.get('ETH_PROVIDER', 'http://localhost:8545')
+logging.getLogger('web3').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 
+default_abi_dir = '/usr/local/share/cic/solidity/abi'
 argparser = argparse.ArgumentParser()
-argparser.add_argument('-p', '--provider', dest='p', default=default_eth_provider, type=str, help='Web3 provider url (http only)')
+argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8545', type=str, help='Web3 provider url (http only)')
 argparser.add_argument('-w', action='store_true', help='Wait for the last transaction to be confirmed')
 argparser.add_argument('-ww', action='store_true', help='Wait for every transaction to be confirmed')
 argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
-argparser.add_argument('-a', '--token-address', required=True, dest='a', type=str, help='Token address')
-argparser.add_argument('-y', '--key-file', dest='y', required=True, type=str, help='Ethereum keystore file to use for signing')
+argparser.add_argument('-a', '--token-address', required='True', dest='a', type=str, help='Token address')
+argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum keystore file to use for signing')
 argparser.add_argument('--env-prefix', default=os.environ.get('CONFINI_ENV_PREFIX'), dest='env_prefix', type=str, help='environment prefix for variables to overwrite configuration')
-argparser.add_argument('--data-only', dest='data_only', action='store_true', help='output data part only (does not require key)')
 argparser.add_argument('-u', '--unsafe', dest='u', action='store_true', help='Auto-convert address to checksum adddress')
 argparser.add_argument('-s', '--send', dest='s', action='store_true', help='Send to network')
 argparser.add_argument('--nonce', type=int, help='Override nonce')
@@ -77,10 +74,6 @@ elif args.v:
 block_all = args.ww 
 block_last = args.w or block_all
 
-signer = None
-signer_address = None
-nonce_oracle = None
-
 passphrase_env = 'ETH_PASSPHRASE'
 if args.env_prefix != None:
     passphrase_env = args.env_prefix + '_' + passphrase_env
@@ -90,6 +83,7 @@ if passphrase == None:
     logg.warning('no passphrase given')
     passphrase=''
 
+signer_address = None
 keystore = DictKeystore()
 if args.y != None:
     logg.debug('loading keystore file {}'.format(args.y))
@@ -105,12 +99,14 @@ if args.nonce != None:
 else:
     nonce_oracle = RPCNonceOracle(signer_address, conn)
 
+def _max_gas(code=None):
+    return 8000000
 
 gas_oracle = None
 if args.gas_price != None or args.gas_limit != None:
     gas_oracle = OverrideGasOracle(price=args.gas_price, limit=args.gas_limit)
 else:
-    gas_oracle = RPCGasOracle(conn, code_callback=ERC20.gas())
+    gas_oracle = RPCGasOracle(conn, code_callback=_max_gas)
 
 chain_spec = ChainSpec.from_chain_str(args.i)
 chain_id = chain_spec.network_id()
@@ -118,8 +114,6 @@ chain_id = chain_spec.network_id()
 value = args.amount
 
 send = args.s
-
-data_only = args.data_only
 
 g = ERC20(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
 
@@ -141,11 +135,6 @@ def main():
         logg.debug('recipient {} balance after: {}'.format(recipient, balance(args.a, recipient)))
 
     (tx_hash_hex, o) = g.transfer(args.a, signer_address, recipient, value)
-    if data_only:
-        tx_raw_bytes = bytes.fromhex(strip_0x(o['params'][0]))
-        tx = unpack(tx_raw_bytes, chain_spec)
-        print(tx['data'])
-        sys.exit(0)
 
     if send:
         conn.do(o)
