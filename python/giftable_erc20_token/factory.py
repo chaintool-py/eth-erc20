@@ -40,7 +40,6 @@ class GiftableToken(TxFactory):
     def gas(code=None):
         return 1500000
 
-
     @staticmethod
     def abi():
         if GiftableToken.__abi == None:

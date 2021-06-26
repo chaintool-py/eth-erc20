@@ -19,13 +19,13 @@ from chainlib.eth.tx import (
         TxFactory,
         TxFormat,
         )
-from chainlib.jsonrpc import JSONRPCRequest
 from chainlib.eth.contract import (
         ABIContractEncoder,
         ABIContractDecoder,
         ABIContractType,
         abi_decode_single,
         )
+from chainlib.jsonrpc import jsonrpc_template
 from chainlib.eth.error import RequestMismatchException
 
 logg = logging.getLogger()
@@ -34,9 +34,8 @@ logg = logging.getLogger()
 class ERC20(TxFactory):
     
 
-    def balance_of(self, contract_address, address, sender_address=ZERO_ADDRESS, id_generator=None):
-        j = JSONRPCRequest(id_generator)
-        o = j.template()
+    def balance_of(self, contract_address, address, sender_address=ZERO_ADDRESS):
+        o = jsonrpc_template()
         o['method'] = 'eth_call'
         enc = ABIContractEncoder()
         enc.method('balanceOf')
@@ -47,17 +46,15 @@ class ERC20(TxFactory):
         tx = self.set_code(tx, data)
         o['params'].append(self.normalize(tx))
         o['params'].append('latest')
-        o = j.finalize(o)
         return o
 
 
-    def balance(self, contract_address, address, sender_address=ZERO_ADDRESS, id_generator=None):
-        return self.balance_of(contract_address, address, sender_address=ZERO_ADDRESS, id_generator=id_generator)
+    def balance(self, contract_address, address, sender_address=ZERO_ADDRESS):
+        return self.balance_of(contract_address, address, sender_address=ZERO_ADDRESS)
 
 
-    def symbol(self, contract_address, sender_address=ZERO_ADDRESS, id_generator=None):
-        j = JSONRPCRequest(id_generator)
-        o = j.template()
+    def symbol(self, contract_address, sender_address=ZERO_ADDRESS):
+        o = jsonrpc_template()
         o['method'] = 'eth_call'
         enc = ABIContractEncoder()
         enc.method('symbol')
@@ -66,13 +63,11 @@ class ERC20(TxFactory):
         tx = self.set_code(tx, data)
         o['params'].append(self.normalize(tx))
         o['params'].append('latest')
-        o = j.finalize(o)
         return o
 
 
-    def name(self, contract_address, sender_address=ZERO_ADDRESS, id_generator=None):
-        j = JSONRPCRequest(id_generator)
-        o = j.template()
+    def name(self, contract_address, sender_address=ZERO_ADDRESS):
+        o = jsonrpc_template()
         o['method'] = 'eth_call'
         enc = ABIContractEncoder()
         enc.method('name')
@@ -81,13 +76,11 @@ class ERC20(TxFactory):
         tx = self.set_code(tx, data)
         o['params'].append(self.normalize(tx))
         o['params'].append('latest')
-        o = j.finalize(o)
         return o
 
     
-    def decimals(self, contract_address, sender_address=ZERO_ADDRESS, id_generator=None):
-        j = JSONRPCRequest(id_generator)
-        o = j.template()
+    def decimals(self, contract_address, sender_address=ZERO_ADDRESS):
+        o = jsonrpc_template()
         o['method'] = 'eth_call'
         enc = ABIContractEncoder()
         enc.method('decimals')
@@ -96,13 +89,11 @@ class ERC20(TxFactory):
         tx = self.set_code(tx, data)
         o['params'].append(self.normalize(tx))
         o['params'].append('latest')
-        o = j.finalize(o)
         return o
 
 
-    def total_supply(self, contract_address, sender_address=ZERO_ADDRESS, id_generator=None):
-        j = JSONRPCRequest(id_generator)
-        o = j.template()
+    def total_supply(self, contract_address, sender_address=ZERO_ADDRESS):
+        o = jsonrpc_template()
         o['method'] = 'eth_call'
         enc = ABIContractEncoder()
         enc.method('totalSupply')
@@ -111,11 +102,10 @@ class ERC20(TxFactory):
         tx = self.set_code(tx, data)
         o['params'].append(self.normalize(tx))
         o['params'].append('latest')
-        o = j.finalize(o)
         return o
 
 
-    def transfer(self, contract_address, sender_address, recipient_address, value, tx_format=TxFormat.JSONRPC, id_generator=None):
+    def transfer(self, contract_address, sender_address, recipient_address, value, tx_format=TxFormat.JSONRPC):
         enc = ABIContractEncoder()
         enc.method('transfer')
         enc.typ(ABIContractType.ADDRESS)
@@ -125,7 +115,7 @@ class ERC20(TxFactory):
         data = add_0x(enc.get())
         tx = self.template(sender_address, contract_address, use_nonce=True)
         tx = self.set_code(tx, data)
-        tx = self.finalize(tx, tx_format, id_generator=id_generator)
+        tx = self.finalize(tx, tx_format)
         return tx
 
 
@@ -176,11 +166,6 @@ class ERC20(TxFactory):
 
     @classmethod
     def parse_balance(self, v):
-        return abi_decode_single(ABIContractType.UINT256, v)
-
-
-    @classmethod
-    def parse_total_supply(self, v):
         return abi_decode_single(ABIContractType.UINT256, v)
 
 
