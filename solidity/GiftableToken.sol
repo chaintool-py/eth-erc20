@@ -82,13 +82,16 @@ contract GiftableToken {
 
 	// Implements ERC20
 	function approve(address _spender, uint256 _value) public returns (bool) {
-		allowance[msg.sender][_spender] += _value;
+		if (_value > 0) {
+			require(allowance[msg.sender][_spender] == 0);
+		}
+		allowance[msg.sender][_spender] = _value;
 		emit Approval(msg.sender, _spender, _value);
 		return true;
 	}
 
 	// Implements EIP165
-	function supportsInterface(bytes4 _sum) {
+	function supportsInterface(bytes4 _sum) public returns (bool) {
 		if (_sum == 0xc6bb4b70) { // ERC20
 			return true;
 		}

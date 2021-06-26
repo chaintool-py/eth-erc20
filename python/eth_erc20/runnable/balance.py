@@ -27,10 +27,6 @@ from eth_abi import encode_single
 
 # external imports
 from chainlib.eth.address import to_checksum
-from chainlib.jsonrpc import (
-        jsonrpc_template,
-        jsonrpc_result,
-        )
 from chainlib.eth.connection import EthHTTPConnection
 from chainlib.eth.gas import (
         OverrideGasOracle,
@@ -44,8 +40,9 @@ from eth_erc20 import ERC20
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
 
-default_abi_dir = os.environ.get('ETH_ABI_DIR', '/usr/share/local/cic/solidity/abi')
-default_eth_provider = os.environ.get('ETH_PROVIDER', 'http://localhost:8545')
+default_eth_provider = os.environ.get('RPC_PROVIDER')
+if default_eth_provider == None:
+    default_eth_provider = os.environ.get('ETH_PROVIDER', 'http://localhost:8545')
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('-p', '--provider', dest='p', default=default_eth_provider, type=str, help='Web3 provider url (http only)')
@@ -53,6 +50,7 @@ argparser.add_argument('-a', '--token-address', dest='a', required=True, type=st
 argparser.add_argument('-f', '--format', dest='f', type=str, default='terminal', help='Output format [terminal (default), raw, brief]')
 argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
 argparser.add_argument('-u', '--unsafe', dest='u', action='store_true', help='Auto-convert address to checksum adddress')
+argparser.add_argument('--seq', action='store_true', help='Use sequential rpc ids')
 argparser.add_argument('-v', action='store_true', help='Be verbose')
 argparser.add_argument('-vv', action='store_true', help='Be more verbose')
 argparser.add_argument('address', type=str, help='Account address')
