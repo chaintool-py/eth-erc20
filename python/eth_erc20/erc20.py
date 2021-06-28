@@ -52,7 +52,7 @@ class ERC20(TxFactory):
 
 
     def balance(self, contract_address, address, sender_address=ZERO_ADDRESS, id_generator=None):
-        return self.balance_of(contract_address, address, sender_address=ZERO_ADDRESS, id_generator=id_generator)
+        return self.balance_of(contract_address, address, sender_address=sender_address, id_generator=id_generator)
 
 
     def symbol(self, contract_address, sender_address=ZERO_ADDRESS, id_generator=None):
