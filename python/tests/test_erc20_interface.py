@@ -17,6 +17,7 @@ from chainlib.eth.address import to_checksum_address
 from giftable_erc20_token import GiftableToken
 from eth_erc20 import ERC20
 
+logging.basicConfig(level=logging.DEBUG)
 logg = logging.getLogger(__name__)
 
 
