@@ -1,5 +1,6 @@
 * 0.0.10-pending
 	- Upgrade chainlib dependency, providing customizable jsonrpc id
+	- Move to chainlib-eth
 * 0.0.9-unreleased
 * 0.0.8-unreleased
 * 0.0.7-unreleased
