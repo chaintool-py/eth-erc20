@@ -115,6 +115,25 @@ class ERC20(TxFactory):
         return o
 
 
+    def allowance(self, contract_address, holder_address, spender_address, sender_address=ZERO_ADDRESS, id_generator=None):
+        j = JSONRPCRequest(id_generator)
+        o = j.template()
+        o['method'] = 'eth_call'
+        enc = ABIContractEncoder()
+        enc.method('allowance')
+        enc.typ(ABIContractType.ADDRESS)
+        enc.typ(ABIContractType.ADDRESS)
+        enc.address(holder_address)
+        enc.address(spender_address)
+        data = add_0x(enc.get())
+        tx = self.template(sender_address, contract_address)
+        tx = self.set_code(tx, data)
+        o['params'].append(self.normalize(tx))
+        o['params'].append('latest')
+        o = j.finalize(o)
+        return o
+
+
     def transfer(self, contract_address, sender_address, recipient_address, value, tx_format=TxFormat.JSONRPC, id_generator=None):
         enc = ABIContractEncoder()
         enc.method('transfer')
@@ -181,6 +200,11 @@ class ERC20(TxFactory):
 
     @classmethod
     def parse_total_supply(self, v):
+        return abi_decode_single(ABIContractType.UINT256, v)
+
+
+    @classmethod
+    def parse_allowance(self, v):
         return abi_decode_single(ABIContractType.UINT256, v)
 
 
