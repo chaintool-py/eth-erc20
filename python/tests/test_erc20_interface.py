@@ -116,6 +116,11 @@ class TestToken(EthTesterCase):
         r = self.rpc.do(o)
         self.assertEqual(r['status'], 1)
 
+        o = c.allowance(self.address, self.accounts[0], self.accounts[1], sender_address=self.accounts[0])
+        r = self.rpc.do(o)
+        allowance = c.parse_allowance(r)
+        self.assertEqual(allowance, 1000)
+
         o = transaction(tx_hash)
         r = self.rpc.do(o)
         data = c.parse_approve_request(r['data'])
@@ -175,7 +180,12 @@ class TestToken(EthTesterCase):
         o = receipt(tx_hash)
         r = self.rpc.do(o)
         self.assertEqual(r['status'], 1)
-        
+ 
+        o = c.allowance(self.address, self.accounts[0], self.accounts[1], sender_address=self.accounts[0])
+        r = self.rpc.do(o)
+        allowance = c.parse_allowance(r)
+        self.assertEqual(allowance, 0)
+
         nonce_oracle = RPCNonceOracle(self.accounts[1], conn=self.conn)
         c = ERC20(self.chain_spec, signer=self.signer, nonce_oracle=nonce_oracle, gas_oracle=gas_oracle)
         (tx_hash, o) = c.transfer_from(self.address, self.accounts[1], self.accounts[0], self.accounts[2], 1)
