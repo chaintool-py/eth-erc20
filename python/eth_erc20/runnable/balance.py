@@ -16,17 +16,17 @@ import json
 import argparse
 import logging
 
-# third-party imports
+# external imports
 from hexathon import (
         add_0x,
         strip_0x,
         even,
         )
 import sha3
-from eth_abi import encode_single
 
 # external imports
-from chainlib.eth.address import to_checksum
+import chainlib.eth.cli
+from chainlib.eth.address import to_checksum_address
 from chainlib.eth.connection import EthHTTPConnection
 from chainlib.eth.gas import (
         OverrideGasOracle,
@@ -40,46 +40,29 @@ from eth_erc20 import ERC20
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
 
-default_eth_provider = os.environ.get('RPC_PROVIDER')
-if default_eth_provider == None:
-    default_eth_provider = os.environ.get('ETH_PROVIDER', 'http://localhost:8545')
-
-argparser = argparse.ArgumentParser()
-argparser.add_argument('-p', '--provider', dest='p', default=default_eth_provider, type=str, help='Web3 provider url (http only)')
-argparser.add_argument('-a', '--token-address', dest='a', required=True, type=str, help='Token address. If not set, will return gas balance')
-argparser.add_argument('-f', '--format', dest='f', type=str, default='terminal', help='Output format [terminal (default), raw, brief]')
-argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
-argparser.add_argument('-u', '--unsafe', dest='u', action='store_true', help='Auto-convert address to checksum adddress')
-argparser.add_argument('--seq', action='store_true', help='Use sequential rpc ids')
-argparser.add_argument('-v', action='store_true', help='Be verbose')
-argparser.add_argument('-vv', action='store_true', help='Be more verbose')
-argparser.add_argument('address', type=str, help='Account address')
+arg_flags = chainlib.eth.cli.argflag_std_read | chainlib.eth.cli.Flag.EXEC
+argparser = chainlib.eth.cli.ArgumentParser(arg_flags)
+argparser.add_positional('address', type=str, help='Ethereum address of recipient')
 args = argparser.parse_args()
+config = chainlib.eth.cli.Config.from_args(args, arg_flags)
 
+wallet = chainlib.eth.cli.Wallet()
+wallet.from_config(config)
+holder_address = args.address
+if wallet.get_signer_address() == None and holder_address != None:
+    holder_address = wallet.from_address(holder_address)
 
-if args.vv:
-    logg.setLevel(logging.DEBUG)
-elif args.v:
-    logg.setLevel(logging.INFO)
+rpc = chainlib.eth.cli.Rpc()
+conn = rpc.connect_by_config(config)
 
-conn = EthHTTPConnection(args.p)
-gas_oracle = OverrideGasOracle(conn)
+chain_spec = ChainSpec.from_chain_str(config.get('CHAIN_SPEC'))
 
-address = to_checksum(args.address)
-if not args.u and address != add_0x(args.address):
-    raise ValueError('invalid checksum address')
-
-token_address = args.a
-
-fmt = args.f
-
-chain_spec = ChainSpec.from_chain_str(args.i)
+token_address = config.get('_EXEC_ADDRESS')
 
 
 def main():
-    r = None
-    decimals = 18
     g = ERC20(chain_spec=chain_spec)
+
     # determine decimals
     decimals_o = g.decimals(token_address)
     r = conn.do(decimals_o)
@@ -96,9 +79,8 @@ def main():
     token_symbol = g.parse_symbol(r)
     logg.info('symbol {}'.format(token_symbol))
 
-
     # get balance
-    balance_o = g.balance(token_address, address)
+    balance_o = g.balance(token_address, holder_address)
     r = conn.do(balance_o)
    
     hx = strip_0x(r)
@@ -107,9 +89,7 @@ def main():
 
     balance_str = str(balance_value)
     balance_len = len(balance_str)
-    if fmt == 'terminal':
-        sys.stdout.write('{} ({}): '.format(token_name, token_symbol))
-    if fmt == 'raw':
+    if config.get('_RAW'):
         print(balance_str)
     else:
         if balance_len < decimals + 1:

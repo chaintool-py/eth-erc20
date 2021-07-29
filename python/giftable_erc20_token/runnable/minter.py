@@ -16,19 +16,15 @@ import logging
 import time
 
 # external imports
+import chainlib.eth.cli
 from chainlib.eth.connection import EthHTTPConnection
-from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
-from crypto_dev_signer.keystore.dict import DictKeystore
-from chainlib.eth.nonce import (
-        RPCNonceOracle,
-        OverrideNonceOracle,
-        )
-from chainlib.eth.gas import (
-        RPCGasOracle,
-        OverrideGasOracle,
-        )
 from chainlib.chain import ChainSpec
 from chainlib.eth.tx import receipt
+from chainlib.eth.address import to_checksum_address
+from hexathon import (
+        strip_0x,
+        add_0x,
+        )
 
 # local imports
 from giftable_erc20_token import GiftableToken
@@ -36,80 +32,56 @@ from giftable_erc20_token import GiftableToken
 logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
 
-script_dir = os.path.dirname(__file__)
-data_dir = os.path.join(script_dir, '..', 'data')
-
-argparser = argparse.ArgumentParser()
-argparser.add_argument('-p', '--provider', dest='p', default='http://localhost:8545', type=str, help='Web3 provider url (http only)')
-argparser.add_argument('-w', action='store_true', help='Wait for the last transaction to be confirmed')
-argparser.add_argument('-ww', action='store_true', help='Wait for every transaction to be confirmed')
-argparser.add_argument('-i', '--chain-spec', dest='i', type=str, default='evm:ethereum:1', help='Chain specification string')
-argparser.add_argument('-a', '--token-address', required='True', dest='a', type=str, help='Giftable token address')
-argparser.add_argument('-y', '--key-file', dest='y', type=str, help='Ethereum keystore file to use for signing')
-argparser.add_argument('-v', action='store_true', help='Be verbose')
-argparser.add_argument('-vv', action='store_true', help='Be more verbose')
-argparser.add_argument('-d', action='store_true', help='Dump RPC calls to terminal and do not send')
-argparser.add_argument('--gas-price', type=int, dest='gas_price', help='Override gas price')
-argparser.add_argument('--nonce', type=int, help='Override transaction nonce')
-argparser.add_argument('--env-prefix', default=os.environ.get('CONFINI_ENV_PREFIX'), dest='env_prefix', type=str, help='environment prefix for variables to overwrite configuration')
-argparser.add_argument('minter_address', type=str, help='Minter address to add')
+arg_flags = chainlib.eth.cli.argflag_std_write | chainlib.eth.cli.Flag.EXEC | chainlib.eth.cli.Flag.WALLET
+argparser = chainlib.eth.cli.ArgumentParser(arg_flags)
+argparser.add_argument('--rm', action='store_true', help='Remove entry')
+argparser.add_positional('minter_address', type=str, help='Address to add or remove as minter')
 args = argparser.parse_args()
+extra_args = {
+    'rm': None,
+    'minter_address': None,
+    }
+config = chainlib.eth.cli.Config.from_args(args, arg_flags, extra_args=extra_args, default_fee_limit=GiftableToken.gas())
 
-if args.vv:
-    logg.setLevel(logging.DEBUG)
-elif args.v:
-    logg.setLevel(logging.INFO)
+wallet = chainlib.eth.cli.Wallet()
+wallet.from_config(config)
 
-block_all = args.ww
-block_last = args.w or block_all
+rpc = chainlib.eth.cli.Rpc(wallet=wallet)
+conn = rpc.connect_by_config(config)
 
-passphrase_env = 'ETH_PASSPHRASE'
-if args.env_prefix != None:
-    passphrase_env = args.env_prefix + '_' + passphrase_env
-passphrase = os.environ.get(passphrase_env)
-if passphrase == None:
-    logg.warning('no passphrase given')
-    passphrase=''
-
-signer_address = None
-keystore = DictKeystore()
-if args.y != None:
-    logg.debug('loading keystore file {}'.format(args.y))
-    signer_address = keystore.import_keystore_file(args.y, password=passphrase)
-    logg.debug('now have key for signer address {}'.format(signer_address))
-signer = EIP155Signer(keystore)
-
-chain_spec = ChainSpec.from_chain_str(args.i)
-
-rpc = EthHTTPConnection(args.p)
-nonce_oracle = None
-if args.nonce != None:
-    nonce_oracle = OverrideNonceOracle(signer_address, args.nonce)
-else:
-    nonce_oracle = RPCNonceOracle(signer_address, rpc)
-
-gas_oracle = None
-if args.gas_price !=None:
-    gas_oracle = OverrideGasOracle(price=args.gas_price, conn=rpc, code_callback=GiftableToken.gas)
-else:
-    gas_oracle = RPCGasOracle(rpc, code_callback=GiftableToken.gas)
-
-dummy = args.d
-
-token_address = args.a
-minter_address = args.minter_address
+chain_spec = ChainSpec.from_chain_str(config.get('CHAIN_SPEC'))
 
 
 def main():
+    signer = rpc.get_signer()
+    signer_address = rpc.get_sender_address()
+
+    gas_oracle = rpc.get_gas_oracle()
+    nonce_oracle = rpc.get_nonce_oracle()
+
+    recipient_address_input = config.get('_RECIPIENT')
+    if recipient_address_input == None:
+        recipient_address_input = signer_address
+
+    recipient_address = add_0x(to_checksum_address(recipient_address_input))
+    if not config.true('_UNSAFE') and recipient_address != add_0x(recipient_address_input):
+        raise ValueError('invalid checksum address for recipient')
+
+    token_address = add_0x(to_checksum_address(config.get('_EXEC_ADDRESS')))
+    if not config.true('_UNSAFE') and token_address != add_0x(config.get('_EXEC_ADDRESS')):
+        raise ValueError('invalid checksum address for contract')
+
+    minter_address = config.get('_MINTER_ADDRESS')
     c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
-    (tx_hash_hex, o) = c.add_minter(token_address, signer_address, minter_address)
-    if dummy:
-        print(tx_hash_hex)
-        print(o)
+    if config.get('_RM'):
+        (tx_hash_hex, o) = c.remove_minter(token_address, signer_address, minter_address)
     else:
-        rpc.do(o)
-        if block_last:
-            r = rpc.wait(tx_hash_hex)
+        (tx_hash_hex, o) = c.add_minter(token_address, signer_address, minter_address)
+
+    if config.get('_RPC_SEND'):
+        conn.do(o)
+        if config.get('_WAIT'):
+            r = conn.wait(tx_hash_hex)
             if r['status'] == 0:
                 sys.stderr.write('EVM revert. Wish I had more to tell you')
                 sys.exit(1)
@@ -117,6 +89,8 @@ def main():
         logg.info('add minter {} to {} tx {}'.format(minter_address, token_address, tx_hash_hex))
 
         print(tx_hash_hex)
+    else:
+        print(o)
 
 
 if __name__ == '__main__':

@@ -38,7 +38,7 @@ class GiftableToken(TxFactory):
 
     @staticmethod
     def gas(code=None):
-        return 1500000
+        return 2000000
 
 
     @staticmethod
@@ -62,6 +62,18 @@ class GiftableToken(TxFactory):
     def add_minter(self, contract_address, sender_address, address, tx_format=TxFormat.JSONRPC):
         enc = ABIContractEncoder()
         enc.method('addMinter')
+        enc.typ(ABIContractType.ADDRESS)
+        enc.address(address)
+        data = enc.get()
+        tx = self.template(sender_address, contract_address, use_nonce=True)
+        tx = self.set_code(tx, data)
+        tx = self.finalize(tx, tx_format)
+        return tx
+
+
+    def remove_minter(self, contract_address, sender_address, address, tx_format=TxFormat.JSONRPC):
+        enc = ABIContractEncoder()
+        enc.method('removeMinter')
         enc.typ(ABIContractType.ADDRESS)
         enc.address(address)
         data = enc.get()

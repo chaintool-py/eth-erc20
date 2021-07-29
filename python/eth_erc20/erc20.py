@@ -199,6 +199,11 @@ class ERC20(TxFactory):
 
 
     @classmethod
+    def parse_balance_of(self, v):
+        return self.parse_balance(v)
+
+
+    @classmethod
     def parse_total_supply(self, v):
         return abi_decode_single(ABIContractType.UINT256, v)
 
