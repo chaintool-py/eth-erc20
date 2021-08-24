@@ -17,24 +17,11 @@ import argparse
 import logging
 
 # external imports
-from crypto_dev_signer.eth.signer import ReferenceSigner as EIP155Signer
-from crypto_dev_signer.keystore.dict import DictKeystore
 from hexathon import (
         add_0x,
         strip_0x,
         )
 from chainlib.eth.connection import EthHTTPConnection
-from chainlib.jsonrpc import (
-        IntSequenceGenerator,
-        )
-from chainlib.eth.nonce import (
-        RPCNonceOracle,
-        OverrideNonceOracle,
-        )
-from chainlib.eth.gas import (
-        RPCGasOracle,
-        OverrideGasOracle,
-        )
 from chainlib.chain import ChainSpec
 from chainlib.eth.runnable.util import decode_for_puny_humans
 from chainlib.eth.address import to_checksum_address
