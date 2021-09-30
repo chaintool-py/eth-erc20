@@ -61,7 +61,7 @@ token_address = config.get('_EXEC_ADDRESS')
 
 
 def main():
-    g = ERC20(chain_spec=chain_spec)
+    g = ERC20(chain_spec=chain_spec, gas_oracle=rpc.get_gas_oracle())
 
     # determine decimals
     decimals_o = g.decimals(token_address)
