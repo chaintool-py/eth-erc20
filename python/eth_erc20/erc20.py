@@ -7,7 +7,6 @@ from hexathon import (
         add_0x,
         strip_0x,
         )
-from crypto_dev_signer.eth.transaction import EIP155Transaction
 
 # external imports
 from chainlib.hash import (

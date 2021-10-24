@@ -23,7 +23,7 @@ contract GiftableToken {
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-	event Mint(address indexed _minter, address indexed _beneficiary, uint256 _value);
+	event Mint(address indexed _minter, address indexed _beneficiary, uint256 _value); // Minter
 
 	constructor(string memory _name, string memory _symbol, uint8 _decimals) public {
 		owner = msg.sender;
@@ -33,6 +33,7 @@ contract GiftableToken {
 		minters[msg.sender] = true;
 	}
 
+	// Implements Minter
 	function mintTo(address _to, uint256 _value) public returns (bool) {
 		require(minters[msg.sender]);
 
@@ -52,12 +53,22 @@ contract GiftableToken {
 		return true;
 	}
 
+	// Implements Writer
+	function addWriter(address _minter) public returns (bool) {
+		return addMinter(_minter);
+	}
+
 	function removeMinter(address _minter) public returns (bool) {
 		require(msg.sender == owner || msg.sender == _minter);
 
 		minters[_minter] = false;
 
 		return true;
+	}
+
+	// Implements Writer
+	function deleteWriter(address _minter) public returns (bool) {
+		return removeMinter(_minter);
 	}
 
 	// Implements ERC20
@@ -99,6 +110,9 @@ contract GiftableToken {
 			return true;
 		}
 		if (_sum == 0x01ffc9a7) { // EIP165
+			return true;
+		}
+		if (_sum == 0x80c84bd6) { // Writer
 			return true;
 		}
 		return false;
