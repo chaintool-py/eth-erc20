@@ -24,7 +24,10 @@ from hexathon import (
 from chainlib.eth.connection import EthHTTPConnection
 from chainlib.chain import ChainSpec
 from chainlib.eth.runnable.util import decode_for_puny_humans
-from chainlib.eth.address import to_checksum_address
+from chainlib.eth.address import (
+        to_checksum_address,
+        is_same_address,
+        )
 import chainlib.eth.cli
 
 # local imports
@@ -35,10 +38,12 @@ logg = logging.getLogger()
 
 arg_flags = chainlib.eth.cli.argflag_std_write | chainlib.eth.cli.Flag.EXEC | chainlib.eth.cli.Flag.WALLET 
 argparser = chainlib.eth.cli.ArgumentParser(arg_flags)
+argparser.add_argument('--from', type=str, help='Address to send on behalf of') 
 argparser.add_positional('amount', type=int, help='Token amount to send')
 args = argparser.parse_args()
 extra_args = {
     'amount': None,
+    'from': None,
         }
 config = chainlib.eth.cli.Config.from_args(args, arg_flags, extra_args=extra_args, default_fee_limit=100000)
 
@@ -82,22 +87,37 @@ def main():
     if not config.true('_UNSAFE') and token_address != add_0x(config.get('_EXEC_ADDRESS')):
         raise ValueError('invalid checksum address for contract')
 
+    transfer_from_address = None
+    if config.get('_FROM'):
+        transfer_from_address = to_checksum_address(config.get('_FROM'))
+        if not config.true('_UNSAFE') and transfer_from_address != add_0x(config.get('_FROM')):
+            raise ValueError('invalid checksum address for "from" argument')
+
+    check_balance_address = None
+    
     if logg.isEnabledFor(logging.DEBUG):
-        sender_balance = balance(g, token_address, signer_address, id_generator=rpc.id_generator)
+        if transfer_from_address:
+            check_balance_address = transfer_from_address
+        else:
+            check_balance_address = signer_address
+        sender_balance = balance(g, token_address, check_balance_address, id_generator=rpc.id_generator)
         recipient_balance = balance(g, token_address, recipient, id_generator=rpc.id_generator)
-        logg.debug('sender {} balance before: {}'.format(signer_address, sender_balance))
+        logg.debug('sender {} balance before: {}'.format(check_balance_address, sender_balance))
         logg.debug('recipient {} balance before: {}'.format(recipient, recipient_balance))
 
-    (tx_hash_hex, o) = g.transfer(token_address, signer_address, recipient, value, id_generator=rpc.id_generator)
+    if transfer_from_address and not is_same_address(transfer_from_address, signer_address):
+        (tx_hash_hex, o) = g.transfer_from(token_address, signer_address, transfer_from_address, recipient, value, id_generator=rpc.id_generator)
+    else:
+        (tx_hash_hex, o) = g.transfer(token_address, signer_address, recipient, value, id_generator=rpc.id_generator)
 
     if send:
         conn.do(o)
         if block_last:
             r = conn.wait(tx_hash_hex)
             if logg.isEnabledFor(logging.DEBUG):
-                sender_balance = balance(g, token_address, signer_address, id_generator=rpc.id_generator)
+                sender_balance = balance(g, token_address, check_balance_address, id_generator=rpc.id_generator)
                 recipient_balance = balance(g, token_address, recipient, id_generator=rpc.id_generator)
-                logg.debug('sender {} balance after: {}'.format(signer_address, sender_balance))
+                logg.debug('sender {} balance after: {}'.format(check_balance_address, sender_balance))
                 logg.debug('recipient {} balance after: {}'.format(recipient, recipient_balance))
             if r['status'] == 0:
                 logg.critical('VM revert. Wish I could tell you more')
