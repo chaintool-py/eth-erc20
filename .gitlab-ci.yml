@@ -1,0 +1,26 @@
+stages:
+  - test
+  - slither-analyzer
+
+test:
+  image: registry.gitlab.com/grassrootseconomics/cic-base-images/ci-solc-py-alpine:latest
+  cache:
+  - key:
+      files:
+        - requirements.txt 
+        - test_requirements.txt
+    paths:
+      -  /root/.cache/pip 
+  script: 
+    - cd python 
+    - pip install --extra-index-url https://pip.grassrootseconomics.net:8433 -r test_requirements.txt 
+    - pip install --extra-index-url https://pip.grassrootseconomics.net:8433 -r test_requirements.txt 
+    - bash run_tests.sh
+
+
+slither-analize:
+  image: registry.gitlab.com/grassrootseconomics/cic-base-images/ci-solc-py-alpine:latest
+  script: 
+    - pip install slither-analyzer 
+    - slither solidity/
+
