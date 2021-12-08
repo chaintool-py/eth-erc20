@@ -3,7 +3,7 @@ stages:
   - slither-analyzer
 
 test:
-  image: registry.gitlab.com/grassrootseconomics/cic-base-images/ci-solc-py:latest
+  image: registry.gitlab.com/grassrootseconomics/cic-base-images/ci-solc-python:latest
   cache:
   - key:
       files:
@@ -22,7 +22,7 @@ test:
 
 
 slither-analize:
-  image: registry.gitlab.com/grassrootseconomics/cic-base-images/ci-solc-py:latest
+  image: registry.gitlab.com/grassrootseconomics/cic-base-images/ci-solc-python:latest
   script: 
     - pip install slither-analyzer 
     - slither solidity/
