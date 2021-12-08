@@ -1,33 +1,35 @@
 FROM ethereum/solc:0.6.12
 
-FROM python:3.8.6-alpine
+FROM python:3.8.6
 
 COPY --from=0 /usr/bin/solc /usr/bin/solc
 
-RUN apk update &&\
-	apk add gcc bash musl-dev libffi-dev openssl-dev autoconf automake build-base \
-  libtool pkgconfig python3-dev cargo
+#RUN apk update &&\
+#	apk add gcc bash cargo
+RUN apt update && \
+    apt install -y gcc bash cargo
 
 WORKDIR /usr/src
 
 # Try to keep everything above here re-usable!
 
-COPY ./solidity/ /usr/src/giftable_erc20_token/solidity/
-COPY ./python/ /usr/src/giftable_erc20_token/python/
+COPY . .
 
 RUN chmod +x ./python/run_tests.sh
 
-RUN cd giftable_erc20_token/solidity && \
+RUN cd ./solidity && \
 	solc GiftableToken.sol --abi | awk 'NR>3' > GiftableToken.abi.json
 
-RUN cd giftable_erc20_token/solidity && \
+RUN cd ./solidity && \
 	solc GiftableToken.sol --bin | awk 'NR>3' > GiftableToken.bin && \
 	truncate -s "$((`stat -t -c "%s" GiftableToken.bin`-1))" GiftableToken.bin
 
-RUN cd giftable_erc20_token/python && \
-	pip install --extra-index-url https://pip.grassrootseconomics.net:8433 .
+RUN cd ./python && \
+	pip install --extra-index-url https://gitlab.com/api/v4/projects/27624814/packages/pypi/simple \
+  --extra-index-url https://pip.grassrootseconomics.net:8433 \
+  -r requirements.txt -r test_requirements.txt
 
-RUN pip install slither-analyzer
+#RUN pip install slither-analyzer
 
 # To deploy:
 # giftable-token-deploy --contracts-dir giftable_erc20_token/solidity/ <amount>
