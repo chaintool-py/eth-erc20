@@ -1,4 +1,6 @@
-* 0.0.10-pending
+* 0.1.3	
+	- Add ERC-173 support to giftable token
+* 0.0.10
 	- Upgrade chainlib dependency, providing customizable jsonrpc id
 	- Move to chainlib-eth
 * 0.0.9-unreleased

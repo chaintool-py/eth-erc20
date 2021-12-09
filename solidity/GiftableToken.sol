@@ -1,10 +1,11 @@
 pragma solidity >0.6.11;
 
 // SPDX-License-Identifier: GPL-3.0-or-later
+// File-Version: 2
 
 contract GiftableToken {
 
-	address owner;
+	address public owner;
 	mapping(address => bool) minters;
 
 	// Implements ERC20
@@ -90,6 +91,11 @@ contract GiftableToken {
 		return true;
 	}
 
+	// Implements EIP173
+	function transferOwnership(address _newOwner) public returns (bool) {
+		owner = _newOwner;
+	}
+
 	// Implements EIP165
 	function supportsInterface(bytes4 _sum) public returns (bool) {
 		if (_sum == 0xc6bb4b70) { // ERC20
@@ -99,6 +105,9 @@ contract GiftableToken {
 			return true;
 		}
 		if (_sum == 0x01ffc9a7) { // EIP165
+			return true;
+		}
+		if (_sum == 0x9493f8b2) { // EIP173
 			return true;
 		}
 		return false;
