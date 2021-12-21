@@ -1,3 +1,3 @@
-confini==0.5.2
-chainlib-eth ==0.0.14
+confini~=0.5.2
+chainlib-eth~=0.0.14
 potaahto==0.1.0
