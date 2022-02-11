@@ -12,6 +12,7 @@ from chainlib.eth.tx import (
         receipt,
         )
 from chainlib.eth.address import to_checksum_address
+from hexathon import strip_0x
 
 # local imports
 from giftable_erc20_token import GiftableToken
@@ -102,7 +103,7 @@ class TestToken(EthTesterCase):
         o = transaction(tx_hash)
         r = self.rpc.do(o)
         data = c.parse_transfer_request(r['data'])
-        self.assertEqual(data[0], self.accounts[1])
+        self.assertEqual(data[0], strip_0x(self.accounts[1]))
         self.assertEqual(data[1], 1000)
 
 
@@ -124,7 +125,7 @@ class TestToken(EthTesterCase):
         o = transaction(tx_hash)
         r = self.rpc.do(o)
         data = c.parse_approve_request(r['data'])
-        self.assertEqual(data[0], self.accounts[1])
+        self.assertEqual(data[0], strip_0x(self.accounts[1]))
         self.assertEqual(data[1], 1000)
 
         nonce_oracle = RPCNonceOracle(self.accounts[1], conn=self.conn)
@@ -138,8 +139,8 @@ class TestToken(EthTesterCase):
         o = transaction(tx_hash)
         r = self.rpc.do(o)
         data = c.parse_transfer_from_request(r['data'])
-        self.assertEqual(data[0], self.accounts[0])
-        self.assertEqual(data[1], self.accounts[2])
+        self.assertEqual(data[0], strip_0x(self.accounts[0]))
+        self.assertEqual(data[1], strip_0x(self.accounts[2]))
         self.assertEqual(data[2], 1001)
 
         (tx_hash, o) = c.transfer_from(self.address, self.accounts[1], self.accounts[0], self.accounts[2], 1000)
