@@ -42,6 +42,7 @@ logg = logging.getLogger()
 
 arg_flags = chainlib.eth.cli.argflag_std_read | chainlib.eth.cli.Flag.EXEC
 argparser = chainlib.eth.cli.ArgumentParser(arg_flags)
+argparser.add_positional('item', required=False)
 args = argparser.parse_args()
 config = chainlib.eth.cli.Config.from_args(args, arg_flags)
 
@@ -56,25 +57,53 @@ token_address = config.get('_EXEC_ADDRESS')
 def main():
     g = ERC20(chain_spec=chain_spec, gas_oracle=rpc.get_gas_oracle())
 
-    name_o = g.name(token_address)
-    r = conn.do(name_o)
-    token_name = g.parse_name(r)
-    print('Name: {}'.format(token_name))
+    if not args.item or args.item == 'name':
+        name_o = g.name(token_address)
+        r = conn.do(name_o)
+        token_name = g.parse_name(r)
+        s = ''
+        if not args.item or not args.raw:
+            s = 'Name: '
+        s += token_name
+        print(s)
+        if args.item == 'name':
+            sys.exit(0)
 
-    symbol_o = g.symbol(token_address)
-    r = conn.do(symbol_o)
-    token_symbol = g.parse_symbol(r)
-    print('Symbol: {}'.format(token_symbol))
+    if not args.item or args.item == 'symbol':
+        symbol_o = g.symbol(token_address)
+        r = conn.do(symbol_o)
+        token_symbol = g.parse_symbol(r)
+        s = ''
+        if not args.item or not args.raw:
+            s = 'Symbol: '
+        s += token_symbol
+        print(s)
+        if args.item == 'symbol':
+            sys.exit(0)
 
-    decimals_o = g.decimals(token_address)
-    r = conn.do(decimals_o)
-    decimals = int(strip_0x(r), 16)
-    print('Decimals: {}'.format(decimals))
+    if not args.item or args.item == 'decimals':
+        decimals_o = g.decimals(token_address)
+        r = conn.do(decimals_o)
+        decimals = int(strip_0x(r), 16)
+        s = ''
+        if not args.item or not args.raw:
+            s = 'Decimals: '
+        s += str(decimals)
+        print(s)
+        if args.item == 'decimals':
+            sys.exit(0)
 
-    supply_o = g.total_supply(token_address)
-    r = conn.do(supply_o)
-    supply = int(strip_0x(r), 16)
-    print('Total supply: {}'.format(supply))
+    if not args.item or args.item == 'supply':
+        supply_o = g.total_supply(token_address)
+        r = conn.do(supply_o)
+        supply = int(strip_0x(r), 16)
+        s = ''
+        if not args.item or not args.raw:
+            s = 'Supply: '
+        s += str(supply)
+        print(s)
+        if args.item == 'supply':
+            sys.exit(0)
 
 
 if __name__ == '__main__':
