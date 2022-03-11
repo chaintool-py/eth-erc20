@@ -1,9 +1,11 @@
-* 0.0.10-pending
+* 0.1.10
+	- Apply transfer ownership protection in GiftableToken contract
+* 0.1.9
+	- Add statictoken contract
+* 0.0.10
 	- Upgrade chainlib dependency, providing customizable jsonrpc id
 	- Move to chainlib-eth
-* 0.0.9-unreleased
-* 0.0.8-unreleased
-* 0.0.7-unreleased
+* 0.0.7
 	- Implement keystore signing.
 	- Change makefile to compile contract for Byzantium.
 	- Change mint method name to mintTo

@@ -93,6 +93,7 @@ contract GiftableToken {
 
 	// Implements EIP173
 	function transferOwnership(address _newOwner) public returns (bool) {
+		require(msg.sender == owner);
 		owner = _newOwner;
 	}
 
