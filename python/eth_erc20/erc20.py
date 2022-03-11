@@ -2,30 +2,23 @@
 import logging
 
 # external imports
-import sha3
-from hexathon import (
-        add_0x,
-        strip_0x,
-        )
-
-# external imports
-from chainlib.hash import (
-        keccak256_hex_to_hex,
-        keccak256_string_to_hex,
-        )
 from chainlib.eth.constant import ZERO_ADDRESS
-from chainlib.eth.tx import (
-        TxFactory,
-        TxFormat,
-        )
-from chainlib.jsonrpc import JSONRPCRequest
 from chainlib.eth.contract import (
-        ABIContractEncoder,
-        ABIContractDecoder,
-        ABIContractType,
-        abi_decode_single,
-        )
+    ABIContractEncoder,
+    ABIContractDecoder,
+    ABIContractType,
+    abi_decode_single,
+)
 from chainlib.eth.error import RequestMismatchException
+from chainlib.eth.tx import (
+    TxFactory,
+    TxFormat,
+)
+from chainlib.jsonrpc import JSONRPCRequest
+from hexathon import (
+    add_0x,
+    strip_0x,
+)
 
 logg = logging.getLogger()
 

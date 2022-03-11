@@ -1,11 +1,10 @@
-pragma solidity >=0.6.11;
+pragma solidity >0.6.11;
 
 // SPDX-License-Identifier: GPL-3.0-or-later
-// File-Version: 2
 
-contract GiftableToken {
+contract StaticToken {
 
-	address public owner;
+	address owner;
 	mapping(address => bool) minters;
 
 	// Implements ERC20
@@ -24,52 +23,14 @@ contract GiftableToken {
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-	event Mint(address indexed _minter, address indexed _beneficiary, uint256 _value); // Minter
 
-	constructor(string memory _name, string memory _symbol, uint8 _decimals) public {
+	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _supply) public {
 		owner = msg.sender;
 		name = _name;
 		symbol = _symbol;
 		decimals = _decimals;
-		minters[msg.sender] = true;
-	}
-
-	// Implements Minter
-	function mintTo(address _to, uint256 _value) public returns (bool) {
-		require(minters[msg.sender]);
-
-		balanceOf[_to] += _value;
-		totalSupply += _value;
-
-		emit Mint(msg.sender, _to, _value);
-
-		return true;
-	}
-
-	function addMinter(address _minter) public returns (bool) {
-		require(msg.sender == owner);
-
-		minters[_minter] = true;
-
-		return true;
-	}
-
-	// Implements Writer
-	function addWriter(address _minter) public returns (bool) {
-		return addMinter(_minter);
-	}
-
-	function removeMinter(address _minter) public returns (bool) {
-		require(msg.sender == owner || msg.sender == _minter);
-
-		minters[_minter] = false;
-
-		return true;
-	}
-
-	// Implements Writer
-	function deleteWriter(address _minter) public returns (bool) {
-		return removeMinter(_minter);
+		totalSupply = _supply;
+		balanceOf[owner] = _supply;
 	}
 
 	// Implements ERC20
@@ -102,27 +63,12 @@ contract GiftableToken {
 		return true;
 	}
 
-	// Implements EIP173
-	function transferOwnership(address _newOwner) public returns (bool) {
-		require(msg.sender == owner);
-		owner = _newOwner;
-	}
-
 	// Implements EIP165
 	function supportsInterface(bytes4 _sum) public returns (bool) {
 		if (_sum == 0xc6bb4b70) { // ERC20
 			return true;
 		}
-		if (_sum == 0x449a52f8) { // Minter
-			return true;
-		}
 		if (_sum == 0x01ffc9a7) { // EIP165
-			return true;
-		}
-		if (_sum == 0x80c84bd6) { // Writer
-			return true;
-		}
-		if (_sum == 0x9493f8b2) { // EIP173
 			return true;
 		}
 		return false;
