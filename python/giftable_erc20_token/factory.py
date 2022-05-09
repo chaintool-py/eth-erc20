@@ -95,3 +95,5 @@ class GiftableToken(TxFactory):
         tx = self.set_code(tx, data)
         tx = self.finalize(tx, tx_format)
         return tx
+
+
