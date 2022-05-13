@@ -26,6 +26,15 @@ import sha3
 
 # external imports
 import chainlib.eth.cli
+from chainlib.eth.cli.arg import (
+        Arg,
+        ArgFlag,
+        process_args,
+        )
+from chainlib.eth.cli.config import (
+        Config,
+        process_config,
+        )
 from chainlib.eth.address import to_checksum_address
 from chainlib.eth.connection import EthHTTPConnection
 from chainlib.eth.gas import (
@@ -33,35 +42,49 @@ from chainlib.eth.gas import (
         balance,
         )
 from chainlib.chain import ChainSpec
+from chainlib.eth.cli.log import process_log
+from chainlib.eth.settings import process_settings
+from chainlib.settings import ChainSettings
 
 # local imports
 from eth_erc20 import ERC20
 
-logging.basicConfig(level=logging.WARNING)
+
+def process_config_local(config, arg, args, flags):
+    config.add(args.address, '_RECIPIENT', False)
+    return config
+
+
 logg = logging.getLogger()
 
-arg_flags = chainlib.eth.cli.argflag_std_read | chainlib.eth.cli.Flag.EXEC
-argparser = chainlib.eth.cli.ArgumentParser(arg_flags)
-argparser.add_positional('address', type=str, help='Ethereum address of recipient')
+arg_flags = ArgFlag()
+arg = Arg(arg_flags)
+flags = arg_flags.STD_READ | arg_flags.EXEC
+
+argparser = chainlib.eth.cli.ArgumentParser()
+argparser = process_args(argparser, arg, flags)
+argparser.add_argument('address', type=str, help='Ethereum address of recipient')
 args = argparser.parse_args()
-config = chainlib.eth.cli.Config.from_args(args, arg_flags)
 
-wallet = chainlib.eth.cli.Wallet()
-wallet.from_config(config)
-holder_address = args.address
-if wallet.get_signer_address() == None and holder_address != None:
-    holder_address = wallet.from_address(holder_address)
+logg = process_log(args, logg)
 
-rpc = chainlib.eth.cli.Rpc()
-conn = rpc.connect_by_config(config)
+config = Config()
+config = process_config(config, arg, args, flags)
+config = process_config_local(config, arg, args, flags)
+logg.debug('config loaded:\n{}'.format(config))
 
-chain_spec = ChainSpec.from_chain_str(config.get('CHAIN_SPEC'))
-
-token_address = config.get('_EXEC_ADDRESS')
+settings = ChainSettings()
+settings = process_settings(settings, config)
+logg.debug('settings loaded:\n{}'.format(settings))
 
 
 def main():
-    g = ERC20(chain_spec=chain_spec, gas_oracle=rpc.get_gas_oracle())
+    token_address = settings.get('EXEC')
+    conn = settings.get('CONN')
+    g = ERC20(
+            chain_spec=settings.get('CHAIN_SPEC'),
+            gas_oracle=settings.get('GAS_ORACLE'),
+            )
 
     # determine decimals
     decimals_o = g.decimals(token_address)
@@ -80,7 +103,7 @@ def main():
     logg.info('symbol {}'.format(token_symbol))
 
     # get balance
-    balance_o = g.balance(token_address, holder_address)
+    balance_o = g.balance(token_address, settings.get('RECIPIENT'))
     r = conn.do(balance_o)
    
     hx = strip_0x(r)

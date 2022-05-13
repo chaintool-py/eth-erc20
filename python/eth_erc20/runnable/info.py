@@ -26,6 +26,15 @@ import sha3
 
 # external imports
 import chainlib.eth.cli
+from chainlib.eth.cli.arg import (
+        Arg,
+        ArgFlag,
+        process_args,
+        )
+from chainlib.eth.cli.config import (
+        Config,
+        process_config,
+        )
 from chainlib.eth.address import to_checksum_address
 from chainlib.eth.connection import EthHTTPConnection
 from chainlib.eth.gas import (
@@ -33,76 +42,98 @@ from chainlib.eth.gas import (
         balance,
         )
 from chainlib.chain import ChainSpec
+from chainlib.eth.settings import process_settings
+from chainlib.settings import ChainSettings
+from chainlib.eth.cli.log import process_log
 
 # local imports
 from eth_erc20 import ERC20
 
-logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
 
-arg_flags = chainlib.eth.cli.argflag_std_read | chainlib.eth.cli.Flag.EXEC
-argparser = chainlib.eth.cli.ArgumentParser(arg_flags)
-argparser.add_positional('item', required=False)
+
+def process_config_local(config, arg, args, flags):
+    config.add(args.item, '_ITEM', False)
+    return config
+
+
+arg_flags = ArgFlag()
+arg = Arg(arg_flags)
+flags = arg_flags.STD_READ | arg_flags.EXEC
+
+argparser = chainlib.eth.cli.ArgumentParser()
+argparser = process_args(argparser, arg, flags)
+argparser.add_argument('item', type=str, nargs='?', help='display only given data item')
 args = argparser.parse_args()
-config = chainlib.eth.cli.Config.from_args(args, arg_flags)
 
-rpc = chainlib.eth.cli.Rpc()
-conn = rpc.connect_by_config(config)
+logg = process_log(args, logg)
 
-chain_spec = ChainSpec.from_chain_str(config.get('CHAIN_SPEC'))
+config = Config()
+config = process_config(config, arg, args, flags)
+config = process_config_local(config, arg, args, flags)
+logg.debug('config loaded:\n{}'.format(config))
 
-token_address = config.get('_EXEC_ADDRESS')
+settings = ChainSettings()
+settings = process_settings(settings, config)
+logg.debug('settings loaded:\n{}'.format(settings))
 
 
 def main():
-    g = ERC20(chain_spec=chain_spec, gas_oracle=rpc.get_gas_oracle())
+    token_address = settings.get('EXEC')
+    item = config.get('_ITEM')
+    conn = settings.get('CONN')
+    g = ERC20(
+            chain_spec=settings.get('CHAIN_SPEC'),
+            gas_oracle=settings.get('GAS_ORACLE'),
+            )
 
-    if not args.item or args.item == 'name':
+
+    if not item or item == 'name':
         name_o = g.name(token_address)
         r = conn.do(name_o)
         token_name = g.parse_name(r)
         s = ''
-        if not args.item or not args.raw:
+        if not item or not args.raw:
             s = 'Name: '
         s += token_name
         print(s)
-        if args.item == 'name':
+        if item == 'name':
             sys.exit(0)
 
-    if not args.item or args.item == 'symbol':
+    if not item or item == 'symbol':
         symbol_o = g.symbol(token_address)
         r = conn.do(symbol_o)
         token_symbol = g.parse_symbol(r)
         s = ''
-        if not args.item or not args.raw:
+        if not item or not args.raw:
             s = 'Symbol: '
         s += token_symbol
         print(s)
-        if args.item == 'symbol':
+        if item == 'symbol':
             sys.exit(0)
 
-    if not args.item or args.item == 'decimals':
+    if not item or item == 'decimals':
         decimals_o = g.decimals(token_address)
         r = conn.do(decimals_o)
         decimals = int(strip_0x(r), 16)
         s = ''
-        if not args.item or not args.raw:
+        if not item or not args.raw:
             s = 'Decimals: '
         s += str(decimals)
         print(s)
-        if args.item == 'decimals':
+        if item == 'decimals':
             sys.exit(0)
 
-    if not args.item or args.item == 'supply':
+    if not item or item == 'supply':
         supply_o = g.total_supply(token_address)
         r = conn.do(supply_o)
         supply = int(strip_0x(r), 16)
         s = ''
-        if not args.item or not args.raw:
+        if not item or not args.raw:
             s = 'Supply: '
         s += str(supply)
         print(s)
-        if args.item == 'supply':
+        if item == 'supply':
             sys.exit(0)
 
 
