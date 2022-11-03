@@ -1,0 +1,3 @@
+On arch, Python.h is in non-standard location, which may cause pip install -r test_requirements to fail.
+
+If so, set env CFLAGS=`pkg-config --cflags python3`

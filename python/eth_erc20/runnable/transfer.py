@@ -21,10 +21,7 @@ from hexathon import (
         add_0x,
         strip_0x,
         )
-from chainlib.eth.connection import EthHTTPConnection
-from chainlib.chain import ChainSpec
 from chainlib.eth.runnable.util import decode_for_puny_humans
-from chainlib.eth.address import to_checksum_address
 import chainlib.eth.cli
 from chainlib.eth.cli.log import process_log
 from chainlib.eth.settings import process_settings
