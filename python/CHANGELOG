@@ -1,5 +1,6 @@
 * 0.4.1
-	- Implement chainlib 0.3.x for giftable token
+	- Implement chainlib 0.4.x for giftable token
+	- Fix broken inputs in erc20 cli tools
 * 0.4.0
 	- Implement chainlib 0.3.0
 * 0.3.1

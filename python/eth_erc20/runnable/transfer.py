@@ -21,7 +21,6 @@ from hexathon import (
         add_0x,
         strip_0x,
         )
-from chainlib.eth.runnable.util import decode_for_puny_humans
 import chainlib.eth.cli
 from chainlib.eth.cli.log import process_log
 from chainlib.eth.settings import process_settings
@@ -43,7 +42,7 @@ logg = logging.getLogger()
 
 
 def process_config_local(config, arg, args, flags):
-    config.add(args.amount, '_VALUE', False)
+    config.add(config.get('_POSARG'), '_VALUE', False)
     return config
 
 
@@ -53,13 +52,13 @@ flags = arg_flags.STD_WRITE | arg_flags.EXEC | arg_flags.WALLET
 
 argparser = chainlib.eth.cli.ArgumentParser()
 argparser = process_args(argparser, arg, flags)
-argparser.add_argument('amount', type=str, help='Token amount to send')
+argparser.add_argument('value', type=str, help='Token value to send')
 args = argparser.parse_args()
 
 logg = process_log(args, logg)
 
 config = Config()
-config = process_config(config, arg, args, flags)
+config = process_config(config, arg, args, flags, positional_name='value')
 config = process_config_local(config, arg, args, flags)
 logg.debug('config loaded:\n{}'.format(config))
 

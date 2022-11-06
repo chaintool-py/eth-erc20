@@ -51,7 +51,13 @@ from eth_erc20 import ERC20
 
 
 def process_config_local(config, arg, args, flags):
-    config.add(args.address, '_RECIPIENT', False)
+    recipient = None
+    address = config.get('_POSARG')
+    if address:
+        recipient = add_0x(address)
+    else:
+        recipient = stdin_arg()
+    config.add(recipient, '_RECIPIENT', False)
     return config
 
 
@@ -69,7 +75,7 @@ args = argparser.parse_args()
 logg = process_log(args, logg)
 
 config = Config()
-config = process_config(config, arg, args, flags)
+config = process_config(config, arg, args, flags, positional_name='address')
 config = process_config_local(config, arg, args, flags)
 logg.debug('config loaded:\n{}'.format(config))
 
