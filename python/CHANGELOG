@@ -1,3 +1,7 @@
+* 0.5.1
+	- Change license to AGPL3 and copyright waived to public domain
+* 0.5.0
+	- Upgrade dependencies
 * 0.4.1
 	- Implement chainlib 0.4.x for giftable token
 	- Fix broken inputs in erc20 cli tools
