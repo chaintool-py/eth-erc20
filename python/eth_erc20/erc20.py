@@ -9,12 +9,14 @@ from chainlib.eth.contract import (
     ABIContractType,
     abi_decode_single,
 )
+from chainlib.eth.jsonrpc import to_blockheight_param
 from chainlib.eth.error import RequestMismatchException
 from chainlib.eth.tx import (
     TxFactory,
     TxFormat,
 )
 from chainlib.jsonrpc import JSONRPCRequest
+from chainlib.block import BlockSpec
 from hexathon import (
     add_0x,
     strip_0x,
@@ -26,7 +28,7 @@ logg = logging.getLogger()
 class ERC20(TxFactory):
     
 
-    def balance_of(self, contract_address, address, sender_address=ZERO_ADDRESS, id_generator=None):
+    def balance_of(self, contract_address, address, sender_address=ZERO_ADDRESS, id_generator=None, height=BlockSpec.LATEST):
         j = JSONRPCRequest(id_generator)
         o = j.template()
         o['method'] = 'eth_call'
@@ -38,7 +40,8 @@ class ERC20(TxFactory):
         tx = self.template(sender_address, contract_address)
         tx = self.set_code(tx, data)
         o['params'].append(self.normalize(tx))
-        o['params'].append('latest')
+        height = to_blockheight_param(height)
+        o['params'].append(height)
         o = j.finalize(o)
         return o
 
