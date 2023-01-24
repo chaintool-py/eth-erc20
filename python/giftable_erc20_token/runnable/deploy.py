@@ -73,6 +73,7 @@ logg.debug('settings loaded:\n{}'.format(settings))
 
 def main():
     signer_address = settings.get('SENDER_ADDRESS')
+    conn = settings.get('CONN')
 
     c = GiftableToken(
             settings.get('CHAIN_SPEC'),

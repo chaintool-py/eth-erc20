@@ -25,62 +25,80 @@ from hexathon import (
         strip_0x,
         add_0x,
         )
+from chainlib.settings import ChainSettings
+from chainlib.eth.cli.log import process_log
+from chainlib.eth.settings import process_settings
+from chainlib.eth.cli.arg import (
+        Arg,
+        ArgFlag,
+        process_args,
+        )
+from chainlib.eth.cli.config import (
+        Config,
+        process_config,
+        )
 
 # local imports
 from giftable_erc20_token import GiftableToken
 
-logging.basicConfig(level=logging.WARNING)
 logg = logging.getLogger()
 
-arg_flags = chainlib.eth.cli.argflag_std_write | chainlib.eth.cli.Flag.EXEC | chainlib.eth.cli.Flag.WALLET
-argparser = chainlib.eth.cli.ArgumentParser(arg_flags)
-argparser.add_positional('amount', type=int, help='Token amount to gift')
+
+def process_config_local(config, arg, args, flags):
+    config.add(config.get('_POSARG'), '_VALUE', False)
+    return config
+
+
+arg_flags = ArgFlag()
+arg = Arg(arg_flags)
+flags = arg_flags.STD_WRITE | arg_flags.WALLET | arg_flags.EXEC
+
+argparser = chainlib.eth.cli.ArgumentParser()
+argparser = process_args(argparser, arg, flags)
+argparser.add_argument('value', type=str, help='Token value to send')
 args = argparser.parse_args()
-extra_args = {
-    'amount': None,
-    }
-config = chainlib.eth.cli.Config.from_args(args, arg_flags, extra_args=extra_args, default_fee_limit=GiftableToken.gas())
 
-wallet = chainlib.eth.cli.Wallet()
-wallet.from_config(config)
+logg = process_log(args, logg)
 
-rpc = chainlib.eth.cli.Rpc(wallet=wallet)
-conn = rpc.connect_by_config(config)
+config = Config()
+config = process_config(config, arg, args, flags, positional_name='value')
+config = process_config_local(config, arg, args, flags)
+logg.debug('config loaded:\n{}'.format(config))
 
-chain_spec = ChainSpec.from_chain_str(config.get('CHAIN_SPEC'))
+settings = ChainSettings()
+settings = process_settings(settings, config)
+logg.debug('settings loaded:\n{}'.format(settings))
 
 
 def main():
-    signer = rpc.get_signer()
-    signer_address = rpc.get_sender_address()
+    token_address = settings.get('EXEC')
+    signer_address = settings.get('SENDER_ADDRESS')
+    recipient = settings.get('RECIPIENT')
+    value = settings.get('VALUE')
+    conn = settings.get('CONN')
 
-    gas_oracle = rpc.get_gas_oracle()
-    nonce_oracle = rpc.get_nonce_oracle()
+    c = GiftableToken(
+            settings.get('CHAIN_SPEC'),
+            signer=settings.get('SIGNER'),
+            gas_oracle=settings.get('GAS_ORACLE'),
+            nonce_oracle=settings.get('NONCE_ORACLE'),
+            )
 
-    recipient_address_input = config.get('_RECIPIENT')
-    if recipient_address_input == None:
-        recipient_address_input = signer_address
-
-    recipient_address = add_0x(to_checksum_address(recipient_address_input))
-    if not config.true('_UNSAFE') and recipient_address != add_0x(recipient_address_input):
-        raise ValueError('invalid checksum address for recipient')
-
-    token_address = add_0x(to_checksum_address(config.get('_EXEC_ADDRESS')))
-    if not config.true('_UNSAFE') and token_address != add_0x(config.get('_EXEC_ADDRESS')):
-        raise ValueError('invalid checksum address for contract')
-
-    token_value = config.get('_AMOUNT')
-    c = GiftableToken(chain_spec, signer=signer, gas_oracle=gas_oracle, nonce_oracle=nonce_oracle)
-    (tx_hash_hex, o) = c.mint_to(token_address, signer_address, recipient_address, token_value)
-    if config.get('_RPC_SEND'):
+    (tx_hash_hex, o) = c.mint_to(
+            token_address,
+            signer_address,
+            recipient,
+            value,
+            )
+    if settings.get('RPC_SEND'):
         conn.do(o)
-        if config.get('_WAIT'):
+        if settings.get('WAIT'):
             r = conn.wait(tx_hash_hex)
             if r['status'] == 0:
                 sys.stderr.write('EVM revert. Wish I had more to tell you')
                 sys.exit(1)
 
-        logg.info('mint to {} tx {}'.format(recipient_address, tx_hash_hex))
+        logg.info('mint to {} tx {}'.format(recipient, tx_hash_hex))
 
         print(tx_hash_hex)
     else:

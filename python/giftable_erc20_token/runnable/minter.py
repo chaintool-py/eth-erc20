@@ -72,7 +72,9 @@ logg.debug('settings loaded:\n{}'.format(settings))
 
 
 def main():
+    token_address = settings.get('EXEC')
     signer_address = settings.get('SENDER_ADDRESS')
+    conn = settings.get('CONN')
 
     recipient_address_input = settings.get('RECIPIENT')
     if recipient_address_input == None:
