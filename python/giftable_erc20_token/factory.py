@@ -24,16 +24,22 @@ class GiftableToken(TxFactory):
     __abi = None
     __bytecode = None
 
-    def constructor(self, sender_address, name, symbol, decimals, tx_format=TxFormat.JSONRPC):
-        code = GiftableToken.bytecode()
+    def constructor(self, sender_address, name, symbol, decimals, tx_format=TxFormat.JSONRPC, version=None):
+        code = constructor_arg(name, symbol, decimals)
+        tx = self.template(sender_address, None, use_nonce=True)
+        tx = self.set_code(tx, code)
+        return self.finalize(tx, tx_format)
+
+
+    @staticmethod
+    def cargs(name, symbol, decimals, version=None):
+        code = GiftableToken.bytecode(version=version)
         enc = ABIContractEncoder()
         enc.string(name)
         enc.string(symbol)
         enc.uint256(decimals)
         code += enc.get()
-        tx = self.template(sender_address, None, use_nonce=True)
-        tx = self.set_code(tx, code)
-        return self.finalize(tx, tx_format)
+        return code
 
 
     @staticmethod
@@ -51,7 +57,7 @@ class GiftableToken(TxFactory):
 
 
     @staticmethod
-    def bytecode():
+    def bytecode(version=None):
         if GiftableToken.__bytecode == None:
             f = open(os.path.join(data_dir, 'GiftableToken.bin'))
             GiftableToken.__bytecode = f.read()
