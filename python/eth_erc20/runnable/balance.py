@@ -65,7 +65,7 @@ logg = logging.getLogger()
 
 arg_flags = ArgFlag()
 arg = Arg(arg_flags)
-flags = arg_flags.STD_READ | arg_flags.EXEC
+flags = arg_flags.STD_READ | arg_flags.EXEC | arg_flags.SENDER
 
 argparser = chainlib.eth.cli.ArgumentParser()
 argparser = process_args(argparser, arg, flags)
@@ -87,29 +87,30 @@ logg.debug('settings loaded:\n{}'.format(settings))
 def main():
     token_address = settings.get('EXEC')
     conn = settings.get('CONN')
+    sender_address = settings.get('SENDER_ADDRESS')
     g = ERC20(
             chain_spec=settings.get('CHAIN_SPEC'),
             gas_oracle=settings.get('GAS_ORACLE'),
             )
 
     # determine decimals
-    decimals_o = g.decimals(token_address)
+    decimals_o = g.decimals(token_address, sender_address=sender_address)
     r = conn.do(decimals_o)
     decimals = int(strip_0x(r), 16)
     logg.info('decimals {}'.format(decimals))
 
-    name_o = g.name(token_address)
+    name_o = g.name(token_address, sender_address=sender_address)
     r = conn.do(name_o)
     token_name = g.parse_name(r)
     logg.info('name {}'.format(token_name))
 
-    symbol_o = g.symbol(token_address)
+    symbol_o = g.symbol(token_address, sender_address=sender_address)
     r = conn.do(symbol_o)
     token_symbol = g.parse_symbol(r)
     logg.info('symbol {}'.format(token_symbol))
 
     # get balance
-    balance_o = g.balance(token_address, settings.get('RECIPIENT'))
+    balance_o = g.balance(token_address, settings.get('RECIPIENT'), sender_address=sender_address)
     r = conn.do(balance_o)
    
     hx = strip_0x(r)

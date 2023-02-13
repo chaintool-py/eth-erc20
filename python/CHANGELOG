@@ -1,3 +1,9 @@
+* 0.5.4
+	- Enable setting sender address on contract read calls
+* 0.5.3
+	- Fix giftable token cli commands
+* 0.5.2
+	- Add block height to balance call
 * 0.5.1
 	- Change license to AGPL3 and copyright waived to public domain
 * 0.5.0

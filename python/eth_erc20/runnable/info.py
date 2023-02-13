@@ -74,7 +74,7 @@ def process_config_local(config, arg, args, flags):
 
 arg_flags = ArgFlag()
 arg = Arg(arg_flags)
-flags = arg_flags.STD_READ | arg_flags.EXEC | arg_flags.TAB
+flags = arg_flags.STD_READ | arg_flags.EXEC | arg_flags.TAB | arg_flags.SENDER 
 
 argparser = chainlib.eth.cli.ArgumentParser()
 argparser = process_args(argparser, arg, flags)
@@ -96,6 +96,7 @@ logg.debug('settings loaded:\n{}'.format(settings))
 def main():
     token_address = config.get('_CONTRACT')
     conn = settings.get('CONN')
+    sender_address = settings.get('SENDER_ADDRESS')
     g = ERC20(
             chain_spec=settings.get('CHAIN_SPEC'),
             gas_oracle=settings.get('GAS_ORACLE'),
@@ -104,7 +105,7 @@ def main():
     outkeys = config.get('_OUTARG')
 
     if not outkeys or 'address' in outkeys:
-        name_o = g.name(token_address)
+        name_o = g.name(token_address, sender_address=sender_address)
         r = conn.do(name_o)
         token_name = g.parse_name(r)
         s = ''
@@ -114,7 +115,7 @@ def main():
         print(s)
 
     if not outkeys or 'symbol' in outkeys:
-        symbol_o = g.symbol(token_address)
+        symbol_o = g.symbol(token_address, sender_address=sender_address)
         r = conn.do(symbol_o)
         token_symbol = g.parse_symbol(r)
         s = ''
@@ -124,7 +125,7 @@ def main():
         print(s)
 
     if not outkeys or 'decimals' in outkeys:
-        decimals_o = g.decimals(token_address)
+        decimals_o = g.decimals(token_address, sender_address=sender_address)
         r = conn.do(decimals_o)
         decimals = int(strip_0x(r), 16)
         s = ''
@@ -134,7 +135,7 @@ def main():
         print(s)
 
     if not outkeys or 'supply' in outkeys:
-        supply_o = g.total_supply(token_address)
+        supply_o = g.total_supply(token_address, sender_address=sender_address)
         r = conn.do(supply_o)
         supply = int(strip_0x(r), 16)
         s = ''
