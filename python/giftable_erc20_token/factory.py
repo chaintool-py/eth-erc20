@@ -25,7 +25,7 @@ class GiftableToken(TxFactory):
     __bytecode = None
 
     def constructor(self, sender_address, name, symbol, decimals, tx_format=TxFormat.JSONRPC, version=None):
-        code = constructor_arg(name, symbol, decimals)
+        code = self.cargs(name, symbol, decimals)
         tx = self.template(sender_address, None, use_nonce=True)
         tx = self.set_code(tx, code)
         return self.finalize(tx, tx_format)
