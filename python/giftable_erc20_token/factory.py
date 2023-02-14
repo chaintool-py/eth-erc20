@@ -103,3 +103,11 @@ class GiftableToken(TxFactory):
         return tx
 
 
+def bytecode(version=None):
+    return GiftableToken.bytecode(version=version)
+
+
+def create(name, symbol, decimals, version=None):
+    return GiftableToken.cargs(name, symbol, decimals, version=version)
+
+default = bytecode
