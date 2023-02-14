@@ -115,5 +115,5 @@ def args(v):
     if v == 'create':
         return (['name', 'symbol', 'decimals'], ['version'],)
     elif v == 'default' or v == 'bytecode':
-        return ([], 'version',)
+        return ([], ['version'],)
     raise ValueError('unknown command: ' + v)
