@@ -103,11 +103,17 @@ class GiftableToken(TxFactory):
         return tx
 
 
-def bytecode(version=None):
-    return GiftableToken.bytecode(version=version)
+def bytecode(**kwargs):
+    return GiftableToken.bytecode(version=kwargs.get('version'))
 
 
-def create(name, symbol, decimals, version=None):
-    return GiftableToken.cargs(name, symbol, decimals, version=version)
+def create(**kwargs):
+    return GiftableToken.cargs(kwargs['name'], kwargs['symbol'], kwargs['decimals'], version=kwargs.get('version'))
 
-default = bytecode
+
+def args(v):
+    if v == 'create':
+        return (['name', 'symbol', 'decimals'], ['version'],)
+    elif v == 'default' or v == 'bytecode':
+        return ([], 'version',)
+    raise ValueError('unknown command: ' + v)
