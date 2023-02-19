@@ -1,3 +1,8 @@
+* 0.5.6
+	- Remove name and symbol lookup
+	- Remove decimals lookup for raw output
+* 0.5.5
+	- Implement chainlib-gen for giftable token
 * 0.5.4
 	- Enable setting sender address on contract read calls
 * 0.5.3

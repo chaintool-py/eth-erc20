@@ -94,20 +94,21 @@ def main():
             )
 
     # determine decimals
-    decimals_o = g.decimals(token_address, sender_address=sender_address)
-    r = conn.do(decimals_o)
-    decimals = int(strip_0x(r), 16)
-    logg.info('decimals {}'.format(decimals))
+    if not config.get('_RAW'):
+        decimals_o = g.decimals(token_address, sender_address=sender_address)
+        r = conn.do(decimals_o)
+        decimals = int(strip_0x(r), 16)
+        logg.info('decimals {}'.format(decimals))
 
-    name_o = g.name(token_address, sender_address=sender_address)
-    r = conn.do(name_o)
-    token_name = g.parse_name(r)
-    logg.info('name {}'.format(token_name))
-
-    symbol_o = g.symbol(token_address, sender_address=sender_address)
-    r = conn.do(symbol_o)
-    token_symbol = g.parse_symbol(r)
-    logg.info('symbol {}'.format(token_symbol))
+#    name_o = g.name(token_address, sender_address=sender_address)
+#    r = conn.do(name_o)
+#    token_name = g.parse_name(r)
+#    logg.info('name {}'.format(token_name))
+#
+#    symbol_o = g.symbol(token_address, sender_address=sender_address)
+#    r = conn.do(symbol_o)
+#    token_symbol = g.parse_symbol(r)
+#    logg.info('symbol {}'.format(token_symbol))
 
     # get balance
     balance_o = g.balance(token_address, settings.get('RECIPIENT'), sender_address=sender_address)
@@ -115,7 +116,10 @@ def main():
    
     hx = strip_0x(r)
     balance_value = int(hx, 16)
-    logg.debug('balance {} = {} decimals {}'.format(even(hx), balance_value, decimals))
+    if config.get('_RAW'):
+        logg.debug('balance {} = {}'.format(even(hx), balance_value))
+    else:
+        logg.debug('balance {} = {} decimals {}'.format(even(hx), balance_value, decimals))
 
     balance_str = str(balance_value)
     balance_len = len(balance_str)
