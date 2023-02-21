@@ -15,29 +15,33 @@ from chainlib.eth.contract import (
 
 # local imports
 from giftable_erc20_token.data import data_dir
+from eth_erc20 import ERC20
 
 logg = logging.getLogger(__name__)
 
 
-class GiftableToken(TxFactory):
+class GiftableToken(ERC20):
 
     __abi = None
     __bytecode = None
 
-    def constructor(self, sender_address, name, symbol, decimals, tx_format=TxFormat.JSONRPC, version=None):
-        code = self.cargs(name, symbol, decimals)
+    def constructor(self, sender_address, name, symbol, decimals, expire=0, tx_format=TxFormat.JSONRPC, version=None):
+        code = self.cargs(name, symbol, decimals, expire=expire)
         tx = self.template(sender_address, None, use_nonce=True)
         tx = self.set_code(tx, code)
         return self.finalize(tx, tx_format)
 
 
     @staticmethod
-    def cargs(name, symbol, decimals, version=None):
+    def cargs(name, symbol, decimals, expire=0, version=None):
+        if expire == None:
+            expire = 0
         code = GiftableToken.bytecode(version=version)
         enc = ABIContractEncoder()
         enc.string(name)
         enc.string(symbol)
         enc.uint256(decimals)
+        enc.uint256(expire)
         code += enc.get()
         return code
 
@@ -108,12 +112,12 @@ def bytecode(**kwargs):
 
 
 def create(**kwargs):
-    return GiftableToken.cargs(kwargs['name'], kwargs['symbol'], kwargs['decimals'], version=kwargs.get('version'))
+    return GiftableToken.cargs(kwargs['name'], kwargs['symbol'], kwargs['decimals'], expire=kwargs.get('expire'), version=kwargs.get('version'))
 
 
 def args(v):
     if v == 'create':
-        return (['name', 'symbol', 'decimals'], ['version'],)
+        return (['name', 'symbol', 'decimals'], ['expire', 'version'],)
     elif v == 'default' or v == 'bytecode':
         return ([], ['version'],)
     raise ValueError('unknown command: ' + v)

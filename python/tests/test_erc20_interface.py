@@ -15,38 +15,14 @@ from chainlib.eth.address import to_checksum_address
 from hexathon import strip_0x
 
 # local imports
-from giftable_erc20_token import GiftableToken
+from giftable_erc20_token.unittest import TestGiftableToken
 from eth_erc20 import ERC20
 
 logging.basicConfig(level=logging.DEBUG)
-logg = logging.getLogger(__name__)
+logg = logging.getLogger()
 
 
-class TestToken(EthTesterCase):
-
-    def setUp(self):
-        super(TestToken, self).setUp()
-        self.conn = RPCConnection.connect(self.chain_spec, 'default')
-        nonce_oracle = RPCNonceOracle(self.accounts[0], conn=self.conn)
-        c = GiftableToken(self.chain_spec, signer=self.signer, nonce_oracle=nonce_oracle)
-        self.symbol = 'FOO'
-        self.name = 'Foo Token'
-        self.decimals = 16
-        (tx_hash, o) = c.constructor(self.accounts[0], self.name, self.symbol, self.decimals)
-        r = self.conn.do(o)
-        logg.debug('deployed with hash {}'.format(r))
-        
-        o = receipt(r)
-        r = self.conn.do(o)
-        self.address = to_checksum_address(r['contract_address'])
-
-        self.initial_supply = 1 << 40
-        (tx_hash, o) = c.mint_to(self.address, self.accounts[0], self.accounts[0], self.initial_supply)
-        r = self.conn.do(o)
-        o = receipt(tx_hash)
-        r = self.conn.do(o)
-        self.assertEqual(r['status'], 1)
-
+class TestToken(TestGiftableToken):
 
     def test_balance(self):
         c = ERC20(self.chain_spec)

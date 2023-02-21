@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export PYTHONPATH=${PYTHONPATH}:.
+
 set -e
 set -x
 for f in `ls tests/*.py`; do

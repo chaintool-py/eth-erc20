@@ -45,6 +45,7 @@ def process_config_local(config, arg, args, flags):
     config.add(args.token_name, '_TOKEN_NAME', False)
     config.add(args.token_symbol, '_TOKEN_SYMBOL', False)
     config.add(args.token_decimals, '_TOKEN_DECIMALS', False)
+    config.add(args.token_expire, '_TOKEN_EXPIRE', False)
     return config
 
 
@@ -57,6 +58,7 @@ argparser = process_args(argparser, arg, flags)
 argparser.add_argument('--name', dest='token_name', required=True, type=str, help='Token name')
 argparser.add_argument('--symbol', dest='token_symbol', required=True, type=str, help='Token symbol')
 argparser.add_argument('--decimals', dest='token_decimals', default=18, type=int, help='Token decimals')
+argparser.add_argument('--expire', dest='token_expire', default=0, type=int, help='Token expiry timestamp (after which token cannot be traded)')
 args = argparser.parse_args()
 
 logg = process_log(args, logg)
@@ -87,6 +89,7 @@ def main():
             config.get('_TOKEN_NAME'),
             config.get('_TOKEN_SYMBOL'),
             config.get('_TOKEN_DECIMALS'),
+            expire=config.get('_TOKEN_EXPIRE'),
             )
     if settings.get('RPC_SEND'):
         conn.do(o)

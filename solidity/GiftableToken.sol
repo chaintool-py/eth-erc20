@@ -21,21 +21,27 @@ contract GiftableToken {
 	// Implements ERC20
 	mapping (address => mapping (address => uint256)) public allowance;
 
+	// timestamp when token contract expires
+	uint256 public expires;
+	bool expired;
+
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 	event Mint(address indexed _minter, address indexed _beneficiary, uint256 _value);
+	event Expired(uint256 _timestamp);
 
-	constructor(string memory _name, string memory _symbol, uint8 _decimals) public {
+	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _expireTimestamp) public {
 		owner = msg.sender;
 		name = _name;
 		symbol = _symbol;
 		decimals = _decimals;
 		minters[msg.sender] = true;
+		expires = _expireTimestamp;
 	}
 
 	function mintTo(address _to, uint256 _value) public returns (bool) {
-		require(minters[msg.sender]);
+		require(minters[msg.sender] || msg.sender == owner);
 
 		balanceOf[_to] += _value;
 		totalSupply += _value;
@@ -45,7 +51,7 @@ contract GiftableToken {
 		return true;
 	}
 
-	function addMinter(address _minter) public returns (bool) {
+	function addWriter(address _minter) public returns (bool) {
 		require(msg.sender == owner);
 
 		minters[_minter] = true;
@@ -53,7 +59,7 @@ contract GiftableToken {
 		return true;
 	}
 
-	function removeMinter(address _minter) public returns (bool) {
+	function removeWriter(address _minter) public returns (bool) {
 		require(msg.sender == owner || msg.sender == _minter);
 
 		minters[_minter] = false;
@@ -61,8 +67,29 @@ contract GiftableToken {
 		return true;
 	}
 
+	function isWriter(address _minter) public view returns(bool) {
+		return minters[_minter] || _minter == owner;
+	}
+
+	function applyExpiry() public returns(uint8) {
+		if (expires == 0) {
+			return 0;
+		}
+		if (expired) {
+			return 1;
+		}
+		if (block.timestamp >= expires) {
+			expired = true;
+			emit Expired(block.timestamp);
+			return 2;
+		}
+		return 0;
+
+	}
+
 	// Implements ERC20
 	function transfer(address _to, uint256 _value) public returns (bool) {
+		require(applyExpiry() == 0);
 		require(balanceOf[msg.sender] >= _value);
 		balanceOf[msg.sender] -= _value; 
 		balanceOf[_to] += _value;
@@ -72,6 +99,7 @@ contract GiftableToken {
 
 	// Implements ERC20
 	function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+		require(applyExpiry() == 0);
 		require(allowance[_from][msg.sender] >= _value);
 		require(balanceOf[_from] >= _value);
 		allowance[_from][msg.sender] = allowance[_from][msg.sender] - _value;
@@ -83,6 +111,7 @@ contract GiftableToken {
 
 	// Implements ERC20
 	function approve(address _spender, uint256 _value) public returns (bool) {
+		require(applyExpiry() == 0);
 		if (_value > 0) {
 			require(allowance[msg.sender][_spender] == 0);
 		}
