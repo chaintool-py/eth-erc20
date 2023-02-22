@@ -80,5 +80,44 @@ class TestExpire(TestGiftableExpireToken):
         self.assertEqual(supply, mint_amount)
 
 
+    def test_burn(self):
+        mint_amount = self.initial_supply
+        nonce_oracle = RPCNonceOracle(self.accounts[1], self.rpc)
+        c = GiftableToken(self.chain_spec, signer=self.signer, nonce_oracle=nonce_oracle)
+        (tx_hash, o) = c.burn(self.address, self.accounts[1], int(mint_amount / 4))
+        self.rpc.do(o)
+        o = receipt(tx_hash)
+        r = self.rpc.do(o)
+        self.assertEqual(r['status'], 0)
+
+        nonce_oracle = RPCNonceOracle(self.accounts[0], self.rpc)
+        c = GiftableToken(self.chain_spec, signer=self.signer, nonce_oracle=nonce_oracle)
+        (tx_hash, o) = c.burn(self.address, self.accounts[0], int(mint_amount / 4))
+        self.rpc.do(o)
+        o = receipt(tx_hash)
+        r = self.rpc.do(o)
+        self.assertEqual(r['status'], 1)
+
+        o = c.burned(self.address, sender_address=self.accounts[0])
+        r = self.rpc.do(o)
+        burned = c.parse_balance(r)
+        self.assertEqual(burned, int(mint_amount / 4))
+
+        o = c.balance_of(self.address, self.accounts[0], sender_address=self.accounts[0])
+        r = self.rpc.do(o)
+        balance = c.parse_balance(r)
+        self.assertEqual(balance, mint_amount - burned)
+
+        o = c.total_supply(self.address, sender_address=self.accounts[0])
+        r = self.rpc.do(o)
+        balance = c.parse_balance(r)
+        self.assertEqual(balance, mint_amount - burned)
+
+        o = c.total_minted(self.address, sender_address=self.accounts[0])
+        r = self.rpc.do(o)
+        balance = c.parse_balance(r)
+        self.assertEqual(balance, mint_amount)
+
+
 if __name__ == '__main__':
     unittest.main()

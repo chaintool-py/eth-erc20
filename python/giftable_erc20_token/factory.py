@@ -12,6 +12,9 @@ from chainlib.eth.contract import (
         ABIContractEncoder,
         ABIContractType,
         )
+from chainlib.eth.constant import ZERO_ADDRESS
+from chainlib.jsonrpc import JSONRPCRequest
+from hexathon import add_0x
 
 # local imports
 from giftable_erc20_token.data import data_dir
@@ -105,6 +108,48 @@ class GiftableToken(ERC20):
         tx = self.set_code(tx, data)
         tx = self.finalize(tx, tx_format)
         return tx
+
+
+    def burn(self, contract_address, sender_address, value, tx_format=TxFormat.JSONRPC):
+        enc = ABIContractEncoder()
+        enc.method('burn')
+        enc.typ(ABIContractType.UINT256)
+        enc.uint256(value)
+        data = enc.get()
+        tx = self.template(sender_address, contract_address, use_nonce=True)
+        tx = self.set_code(tx, data)
+        tx = self.finalize(tx, tx_format)
+        return tx
+
+
+    def burned(self, contract_address, sender_address=ZERO_ADDRESS, id_generator=None):
+        j = JSONRPCRequest(id_generator)
+        o = j.template()
+        o['method'] = 'eth_call'
+        enc = ABIContractEncoder()
+        enc.method('burned')
+        data = add_0x(enc.get())
+        tx = self.template(sender_address, contract_address)
+        tx = self.set_code(tx, data)
+        o['params'].append(self.normalize(tx))
+        o['params'].append('latest')
+        o = j.finalize(o)
+        return o
+
+
+    def total_minted(self, contract_address, sender_address=ZERO_ADDRESS, id_generator=None):
+        j = JSONRPCRequest(id_generator)
+        o = j.template()
+        o['method'] = 'eth_call'
+        enc = ABIContractEncoder()
+        enc.method('totalMinted')
+        data = add_0x(enc.get())
+        tx = self.template(sender_address, contract_address)
+        tx = self.set_code(tx, data)
+        o['params'].append(self.normalize(tx))
+        o['params'].append('latest')
+        o = j.finalize(o)
+        return o
 
 
 def bytecode(**kwargs):

@@ -5,8 +5,11 @@ pragma solidity >=0.6.11;
 
 contract GiftableToken {
 
+	// Implements EIP173
 	address public owner;
-	mapping(address => bool) minters;
+
+	// Implements Writer
+	mapping(address => bool) writer;
 
 	// Implements ERC20
 	string public name;
@@ -15,62 +18,90 @@ contract GiftableToken {
 	// Implements ERC20
 	uint8 public decimals;
 	// Implements ERC20
-	uint256 public totalSupply;
-	// Implements ERC20
 	mapping (address => uint256) public balanceOf;
 	// Implements ERC20
 	mapping (address => mapping (address => uint256)) public allowance;
 
-	// timestamp when token contract expires
+	// Implements Burner
+	uint256 public totalMinted;
+	// Implements Burner
+	uint256 public burned;
+
+	// Implements expire
 	uint256 public expires;
 	bool expired;
 
+	// Implements ERC20
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
+	// Implements ERC20
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
+	// Implements ERC20
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+
+	// Implements Minter
 	event Mint(address indexed _minter, address indexed _beneficiary, uint256 _value);
+
+	// Implement Expire
 	event Expired(uint256 _timestamp);
+
+	// Implements Writer
+	event WriterAdded(address _writer);
+	// Implements Writer
+	event WriterRemoved(address _writer);
+
+	// Implements Burner
+	event Burn(uint256 _value);
 
 	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _expireTimestamp) public {
 		owner = msg.sender;
 		name = _name;
 		symbol = _symbol;
 		decimals = _decimals;
-		minters[msg.sender] = true;
 		expires = _expireTimestamp;
 	}
 
+	// Implements ERC20
+	function totalSupply() public returns (uint256) {
+		return totalMinted - burned;
+	}
+
+	// Implements Minter
+	mapping(address => bool) writers;
 	function mintTo(address _to, uint256 _value) public returns (bool) {
-		require(minters[msg.sender] || msg.sender == owner);
+		require(writers[msg.sender] || msg.sender == owner);
 
 		balanceOf[_to] += _value;
-		totalSupply += _value;
+		totalMinted += _value;
 
 		emit Mint(msg.sender, _to, _value);
 
 		return true;
 	}
 
+	// Implements Writer
 	function addWriter(address _minter) public returns (bool) {
 		require(msg.sender == owner);
 
-		minters[_minter] = true;
+		writers[_minter] = true;
 
 		return true;
 	}
 
+	// Implements Writer
 	function removeWriter(address _minter) public returns (bool) {
 		require(msg.sender == owner || msg.sender == _minter);
 
-		minters[_minter] = false;
+		writers[_minter] = false;
 
 		return true;
 	}
 
+	// Implements Writer
 	function isWriter(address _minter) public view returns(bool) {
-		return minters[_minter] || _minter == owner;
+		return writers[_minter] || _minter == owner;
 	}
 
+	// Implements Expire
 	function applyExpiry() public returns(uint8) {
 		if (expires == 0) {
 			return 0;
@@ -95,6 +126,17 @@ contract GiftableToken {
 		balanceOf[_to] += _value;
 		emit Transfer(msg.sender, _to, _value);
 		return true;
+	}
+
+	// Implements Burner
+	function burn(uint256 _value) public returns (bool) {
+		require(msg.sender == owner, 'ERR_ACCESS');
+		require(balanceOf[msg.sender] >= _value, 'ERR_FUNDS');
+
+		balanceOf[msg.sender] -= _value;
+		burned += _value;
+
+		emit Burn(_value);
 	}
 
 	// Implements ERC20
@@ -138,6 +180,12 @@ contract GiftableToken {
 			return true;
 		}
 		if (_sum == 0x9493f8b2) { // EIP173
+			return true;
+		}
+		if (_sum == 0xabe1f1f5) { // Writer
+			return true;
+		}
+		if (_sum == 0xfccc2e79) { // Burner
 			return true;
 		}
 		return false;
