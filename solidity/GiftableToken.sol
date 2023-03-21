@@ -52,7 +52,7 @@ contract GiftableToken {
 	// Implements Burner
 	event Burn(uint256 _value);
 
-	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _expireTimestamp) public {
+	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _expireTimestamp) {
 		owner = msg.sender;
 		name = _name;
 		symbol = _symbol;
@@ -61,7 +61,7 @@ contract GiftableToken {
 	}
 
 	// Implements ERC20
-	function totalSupply() public returns (uint256) {
+	function totalSupply() public view returns (uint256) {
 		return totalMinted - burned;
 	}
 
@@ -137,6 +137,7 @@ contract GiftableToken {
 		burned += _value;
 
 		emit Burn(_value);
+		return true;
 	}
 
 	// Implements ERC20
@@ -166,10 +167,11 @@ contract GiftableToken {
 	function transferOwnership(address _newOwner) public returns (bool) {
 		require(msg.sender == owner);
 		owner = _newOwner;
+		return true;
 	}
 
 	// Implements EIP165
-	function supportsInterface(bytes4 _sum) public returns (bool) {
+	function supportsInterface(bytes4 _sum) public pure returns (bool) {
 		if (_sum == 0xc6bb4b70) { // ERC20
 			return true;
 		}

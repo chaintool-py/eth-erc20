@@ -24,7 +24,7 @@ contract StaticToken {
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
-	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _supply) public {
+	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _supply) {
 		owner = msg.sender;
 		name = _name;
 		symbol = _symbol;
@@ -64,7 +64,7 @@ contract StaticToken {
 	}
 
 	// Implements EIP165
-	function supportsInterface(bytes4 _sum) public returns (bool) {
+	function supportsInterface(bytes4 _sum) public pure returns (bool) {
 		if (_sum == 0xc6bb4b70) { // ERC20
 			return true;
 		}
