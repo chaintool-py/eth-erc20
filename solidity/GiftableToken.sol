@@ -25,7 +25,7 @@ contract GiftableToken {
 	// Implements Burner
 	uint256 public totalMinted;
 	// Implements Burner
-	uint256 public burned;
+	uint256 public totalBurned;
 
 	// Implements expire
 	uint256 public expires;
@@ -62,7 +62,7 @@ contract GiftableToken {
 
 	// Implements ERC20
 	function totalSupply() public view returns (uint256) {
-		return totalMinted - burned;
+		return totalMinted - totalBurned;
 	}
 
 	// Implements Minter
@@ -134,7 +134,7 @@ contract GiftableToken {
 		require(balanceOf[msg.sender] >= _value, 'ERR_FUNDS');
 
 		balanceOf[msg.sender] -= _value;
-		burned += _value;
+		totalBurned += _value;
 
 		emit Burn(_value);
 		return true;
@@ -172,7 +172,7 @@ contract GiftableToken {
 
 	// Implements EIP165
 	function supportsInterface(bytes4 _sum) public pure returns (bool) {
-		if (_sum == 0xc6bb4b70) { // ERC20
+		if (_sum == 0xb61bc941) { // ERC20
 			return true;
 		}
 		if (_sum == 0x449a52f8) { // Minter
@@ -187,7 +187,7 @@ contract GiftableToken {
 		if (_sum == 0xabe1f1f5) { // Writer
 			return true;
 		}
-		if (_sum == 0xfccc2e79) { // Burner
+		if (_sum == 0xb1110c1b) { // Burner
 			return true;
 		}
 		return false;

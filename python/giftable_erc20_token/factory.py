@@ -127,7 +127,7 @@ class GiftableToken(ERC20):
         o = j.template()
         o['method'] = 'eth_call'
         enc = ABIContractEncoder()
-        enc.method('burned')
+        enc.method('totalBurned')
         data = add_0x(enc.get())
         tx = self.template(sender_address, contract_address)
         tx = self.set_code(tx, data)
