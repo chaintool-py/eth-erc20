@@ -1,3 +1,8 @@
+* 0.7.2
+	- Update python classifiers
+	- Upgrade to beta
+* 0.7.1
+	- Upgrade deps
 * 0.7.0
 	- Implement proper burner interface method
 * 0.6.2
