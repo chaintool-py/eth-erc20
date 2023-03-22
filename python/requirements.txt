@@ -1,4 +1,4 @@
 confini~=0.6.1
-chainlib-eth~=0.4.15
-chainlib~=0.4.8
+chainlib-eth~=0.4.17
+chainlib~=0.4.12
 potaahto~=0.1.1
