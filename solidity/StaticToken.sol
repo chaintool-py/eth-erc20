@@ -1,6 +1,6 @@
-pragma solidity >0.6.11;
+pragma solidity >=0.8.0;
 
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 contract StaticToken {
 
@@ -20,8 +20,11 @@ contract StaticToken {
 	// Implements ERC20
 	mapping (address => mapping (address => uint256)) public allowance;
 
+	// Implements ERC20
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
+	// Implements ERC20
 	event TransferFrom(address indexed _from, address indexed _to, address indexed _spender, uint256 _value);
+	// Implements ERC20
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
 	constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _supply) {
@@ -65,7 +68,7 @@ contract StaticToken {
 
 	// Implements EIP165
 	function supportsInterface(bytes4 _sum) public pure returns (bool) {
-		if (_sum == 0xc6bb4b70) { // ERC20
+		if (_sum == 0xb61bc941) { // ERC20
 			return true;
 		}
 		if (_sum == 0x01ffc9a7) { // EIP165

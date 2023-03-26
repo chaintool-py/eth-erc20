@@ -1,7 +1,7 @@
-pragma solidity >=0.6.11;
+pragma solidity >=0.8.0;
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-// File-Version: 2
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// File-Version: 3
 
 contract GiftableToken {
 
@@ -27,7 +27,7 @@ contract GiftableToken {
 	// Implements Burner
 	uint256 public totalBurned;
 
-	// Implements expire
+	// Implements Expire
 	uint256 public expires;
 	bool expired;
 
@@ -78,6 +78,13 @@ contract GiftableToken {
 		return true;
 	}
 
+	// Implements Minter
+	// Implements ERC5679Ext20
+	function mint(address _to, uint256 _value, bytes calldata _data) public {
+		_data;
+		mintTo(_to, _value);
+	}
+
 	// Implements Writer
 	function addWriter(address _minter) public returns (bool) {
 		require(msg.sender == owner);
@@ -88,7 +95,7 @@ contract GiftableToken {
 	}
 
 	// Implements Writer
-	function removeWriter(address _minter) public returns (bool) {
+	function deleteWriter(address _minter) public returns (bool) {
 		require(msg.sender == owner || msg.sender == _minter);
 
 		writers[_minter] = false;
@@ -140,6 +147,19 @@ contract GiftableToken {
 		return true;
 	}
 
+	// Implements Burner
+	function burn() public returns(bool) {
+		return burn(balanceOf[msg.sender]);
+	}
+
+	// Implements Burner
+	// Implements ERC5679Ext20
+	function burn(address _from, uint256 _value, bytes calldata _data) public {
+		require(msg.sender == _from, 'ERR_NOT_SELF');
+		_data;
+		burn(_value);
+	}
+
 	// Implements ERC20
 	function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
 		require(applyExpiry() == 0);
@@ -188,6 +208,9 @@ contract GiftableToken {
 			return true;
 		}
 		if (_sum == 0xb1110c1b) { // Burner
+			return true;
+		}
+		if (_sum == 0x841a0e94) { // Expire
 			return true;
 		}
 		return false;
