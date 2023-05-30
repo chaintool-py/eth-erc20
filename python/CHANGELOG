@@ -1,3 +1,7 @@
+* 0.7.4
+	- Add missing unittest module to python package
+* 0.7.3
+	- Add ERC5679Ext20 fills
 * 0.7.2
 	- Update python classifiers
 	- Upgrade to beta

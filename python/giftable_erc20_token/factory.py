@@ -45,7 +45,9 @@ class GiftableToken(ERC20):
         enc.string(symbol)
         enc.uint256(decimals)
         enc.uint256(expire)
-        code += enc.get()
+        args = enc.get()
+        code += args
+        logg.debug('constructor code: ' + args)
         return code
 
 

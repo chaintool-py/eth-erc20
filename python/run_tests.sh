@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export PYTHONPATH=${PYTHONPATH}:.
+>&2 echo "using pythonpath $PYTHONPATH"
 
 set -e
 set -x

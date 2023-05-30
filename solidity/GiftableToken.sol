@@ -65,8 +65,9 @@ contract GiftableToken {
 		return totalMinted - totalBurned;
 	}
 
-	// Implements Minter
 	mapping(address => bool) writers;
+
+	// Implements Minter
 	function mintTo(address _to, uint256 _value) public returns (bool) {
 		require(writers[msg.sender] || msg.sender == owner);
 
