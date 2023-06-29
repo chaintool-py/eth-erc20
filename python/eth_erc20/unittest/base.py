@@ -12,7 +12,6 @@ from chainlib.eth.tx import (
 from hexathon import strip_0x
 
 # local imports
-from giftable_erc20_token.unittest import TestGiftableToken
 from eth_erc20 import ERC20
 
 logging.basicConfig(level=logging.DEBUG)
@@ -53,12 +52,13 @@ class TestInterface:
         self.assertEqual(self.symbol, symbol)
 
 
-    def test_transfer(self):
+    def test_direct_transfer(self):
         nonce_oracle = RPCNonceOracle(self.accounts[0], conn=self.conn)
         gas_oracle = OverrideGasOracle(limit=100000, conn=self.conn)
         c = ERC20(self.chain_spec, signer=self.signer, nonce_oracle=nonce_oracle, gas_oracle=gas_oracle)
+
         (tx_hash, o) = c.transfer(self.address, self.accounts[0], self.accounts[1], 1000)
-        r = self.rpc.do(o)
+        self.rpc.do(o)
         o = receipt(tx_hash)
         r = self.rpc.do(o)
         self.assertEqual(r['status'], 1)
@@ -85,7 +85,7 @@ class TestInterface:
         gas_oracle = OverrideGasOracle(limit=100000, conn=self.conn)
         c = ERC20(self.chain_spec, signer=self.signer, nonce_oracle=nonce_oracle, gas_oracle=gas_oracle)
         (tx_hash, o) = c.approve(self.address, self.accounts[0], self.accounts[1], 1000)
-        r = self.rpc.do(o)
+        self.rpc.do(o)
         o = receipt(tx_hash)
         r = self.rpc.do(o)
         self.assertEqual(r['status'], 1)

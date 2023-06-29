@@ -6,3 +6,5 @@ gmon.out
 *.egg-info
 .venv/
 .idea
+solidity/*.json
+solidity/*.bin
