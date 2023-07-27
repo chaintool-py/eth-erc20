@@ -1,3 +1,5 @@
+* 0.7.5
+	- Factor out token publish method in unittest fixture
 * 0.7.4
 	- Add missing unittest module to python package
 * 0.7.3
